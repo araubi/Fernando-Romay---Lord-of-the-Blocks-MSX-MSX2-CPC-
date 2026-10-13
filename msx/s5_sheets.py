@@ -108,3 +108,26 @@ def export(P, bg, outdir):
     files['canastas'] = im2
     for n, im in files.items(): im.save('%s/MSX2_S5_%s.png' % (outdir, n))
     return files
+
+
+def export_pres(outdir):
+    """presentacion: imagen fija + fotogramas de balon, cabeza y mano (ya coloreados)"""
+    import pres_color as PC
+    pic, frames = PC.build()
+    panels = [('PRESENTACION (imagen completa, 256x192)', pic, False)]
+    im, pos, d, y = layout(panels, extra_h=TITLE_H * 3 + 56 * S + 32 * S + 24 * S + 3 * MARGIN)
+    im2 = Image.new('RGB', (max(im.width, MARGIN * 2 + 8 * (32 * S + 12)), im.height), (40, 40, 48)); d = ImageDraw.Draw(im2)
+    y = MARGIN
+    d.text((MARGIN, y), panels[0][0], fill=(255, 255, 160)); y += TITLE_H
+    paste(im2, pic, MARGIN, y); y += pic.shape[0] * S + MARGIN
+    for title, keys, h in (('CABEZA: 8 fotogramas de 32x56 (x 48, y 8)', PC.HEADS, 56),
+                           ('BALON: 3 fotogramas de 32x32 (x 8, y 0)', PC.BALLS, 32),
+                           ('MANO: 4 fotogramas de 24x24 (x 56, y 80)', PC.HANDS_ALL, 24)):
+        d.text((MARGIN, y), title, fill=(255, 255, 160)); y += TITLE_H
+        x = MARGIN
+        for k in keys:
+            a = frames[k][4]; paste(im2, a, x, y); x += a.shape[1] * S + 12
+        y += h * S + MARGIN
+    legend(d, MARGIN, y)
+    im2.save('%s/MSX2_S5_presentacion.png' % outdir)
+    return im2

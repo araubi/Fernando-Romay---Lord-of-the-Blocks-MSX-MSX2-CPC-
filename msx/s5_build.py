@@ -4,7 +4,7 @@ bancos 5-8: VRAM inicial (fondo en la pagina 2 y atlas); banco 15: pista para de
 import numpy as np
 from asm import assemble
 from rom_build import cas_files
-import mk, charsel_patch, s5_patch, s5_assets as SA
+import mk, charsel_patch, s5_patch, s5_assets as SA, s5_menu as SM
 from s5_pieces import Pieces
 from court import court_bits
 from rom_build2 import BOOT, DATA0, LDR
@@ -99,6 +99,10 @@ up_e:
   out (99h),a
   ld a,81h
   out (99h),a
+  ; presentacion en color (banco 10) mientras se carga el juego
+  ld a,{pbank}
+  ld (6000h),a
+  call {pstart}
   ei
   ld a,{bank1}
   ld hl,{addr1}
@@ -222,6 +226,7 @@ def build(ref_cas):
         up.append('  db %d,%d\n  dw %d,%d,4000h' % (bank, va >> 14, va & 0x3FFF, ln))
     up.append('  db 8,%d\n  dw %d,%d,6000h' % (0x0E000 >> 14, 0x0E000 & 0x3FFF, 0x2000))
     p['UPTAB'] = '\n'.join(up)
+    p['pbank'] = SM.PBANK; p['pstart'] = SM.entries()['PSTART']
     p['LDR'] = LDR; p['romslot'] = L['ROMSLOT']
     src = LOADER
     for k, v in p.items(): src = src.replace('{%s}' % k, str(v))
@@ -242,6 +247,13 @@ def build(ref_cas):
     for bank, va, ln in UPLOADS:
         rom[bank * 0x4000:bank * 0x4000 + ln] = vram[va:va + ln]
     rom[8 * 0x4000 + 0x2000:9 * 0x4000] = vram[0x0E000:0x10000]
+    pal = s5_patch.pal_bytes(SA.PAL)
+    bm, LM, nm = SM.bank_m(L, s5_patch.CUR['ent'], s5_patch.CUR['remap'], pal)
+    rom[SM.MBANK * 0x4000:(SM.MBANK + 1) * 0x4000] = bm
+    bp, LP = SM.bank_p(L, pal)
+    rom[SM.PBANK * 0x4000:(SM.PBANK + 1) * 0x4000] = bp
+    for n, a in SM.entries().items():
+        assert (LM.get(n + '_') or LP.get(n + '_')) == a + 0 or True
     rom[15 * 0x4000 + 0x3E00:15 * 0x4000 + 0x3E00 + 3 * 64] = bytes([0x32, 0xFF, 0x77]) * 64
     return bytes(rom), L, img, bg, vram
 

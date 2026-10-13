@@ -22,6 +22,7 @@ Idea general
 import re
 from asm import assemble
 import s5_assets as SA
+import s5_menu as SM
 
 # ---------------------------------------------------------------------------------------------
 # memoria
@@ -66,7 +67,11 @@ ROMO2OR  equ {0x4000 + ROM_O2ORIG}
 ROMCK    equ {0x4000 + ROM_CK}
 ROMMENU  equ {0x4000 + ROM_MENU}
 BLANKCK  equ {BLANKCK}
-"""
+MLIST    equ {SM.MLIST}
+NMLIST   equ {SM.NMLIST}
+MBANK    equ {SM.MBANK}
+PBANK    equ {SM.PBANK}
+""" + ''.join('%s equ %d\n' % kv for kv in SM.entries().items())
 
 # =============================================================================================
 # A: residente (variables, piezas, fotograma, VDP)
@@ -100,6 +105,14 @@ TXR1:    db 0
 TXC0:    db 0
 TXC1:    db 0
 CMDB:    ds 15
+MON:     db 0
+MDISP:   db 0
+MROW:    db 0
+MPG2:    db 0
+MLISTN:  db 0
+MROT:    db 0
+MRF0:    db 0
+MRF1:    db 0
 
 ; ---------- 9E6Fh: recordar el indice de la pieza ----------
 IDXH:
@@ -114,7 +127,35 @@ PIECEH:
   ld a,(S5ON)
   or a
   jr nz,ph_s5
+  ld a,(MON)
+  or a
+  jr nz,ph_m
   ld hl,(0D09Ah)
+  ret
+; modo M: apuntar la pieza (indice, lado, y, x/2) y no dibujarla en el bufer
+ph_m:
+  pop hl
+  ld hl,MLISTN
+  ld a,(hl)
+  cp NMLIST
+  ret nc
+  inc (hl)
+  add a,a
+  add a,a
+  ld e,a
+  ld d,0
+  ld hl,MLIST
+  add hl,de
+  ld a,(LASTIDX)
+  ld (hl),a
+  inc hl
+  ld a,ixl
+  ld (hl),a
+  inc hl
+  ld de,(0D098h)
+  ld (hl),e
+  inc hl
+  ld (hl),d
   ret
 ph_s5:
   pop hl
@@ -135,9 +176,7 @@ COPYH:
 UPLH:
   ld a,(S5ON)
   or a
-  jr nz,up_s5
-  ld hl,0C298h
-  jp 0B201h
+  jp z,MUPL
 up_s5:
   call FBEGIN
   call VWAIT
@@ -577,6 +616,7 @@ WIPET:
   ld a,(S5ON)
   or a
   jp nz,WIPEH
+  call S5EXIT
   ld ix,0D0ACh
   jp 0A0C3h
 CROWDT:
@@ -595,7 +635,7 @@ PRCH:
   call 0D8C1h
   ld a,(S5ON)
   or a
-  ret z
+  jr z,pr_m
   ld a,(REPLAY)
   or a
   ret nz
@@ -607,6 +647,25 @@ PRCH:
   or a
   jp nz,MARKD
   jp CHKCELL
+; modo M (menu/descanso en G4): marcar la celda
+pr_m:
+  call MIFON
+  ret z
+  ld a,(4102h)
+  ld (CROW),a
+  ld a,(4103h)
+  ld (CCOL),a
+  call RCALLM
+  dw MMARKC
+  ret
+; MIFON: NZ si el modo M esta en pantalla (solo cambia A)
+MIFON:
+  ld a,(MDISP)
+  push hl
+  ld hl,MON
+  and (hl)
+  pop hl
+  ret
 
 ; ---------- 9F48h (jp): barras de energia ----------
 BARH:
@@ -647,12 +706,26 @@ BARO:
   jp 9F4Bh
 
 ; ---------- D252h (jp): imagen/colores de un rectangulo de celdas ----------
+D247H:
+  ld hl,003Eh
+  jr dh_c
 D252H:
   ld a,(S5ON)
   or a
   jr nz,dh_1
   ld hl,007Eh
-  jp 0D255h
+dh_c:
+  call 0D255h
+  push af
+  call MIFON
+  jr z,dh_x
+  pop af
+  call RCALLM
+  dw MMARKR
+  ret
+dh_x:
+  pop af
+  ret
 dh_1:
   ld a,(REPLAY)
   or a
@@ -722,11 +795,121 @@ MENUY:
 ; ---------- A1E1h (call A0BFh): pantalla de descanso / fin -> G2 con la cortinilla original ----------
 RESTH:
   call S5EXIT
+  ld a,1
+  ld (MON),a
   jp 0A0BFh
 ; ---------- 8508h (ld hl,7EAFh): menu principal -> G2 y graficos del menu ----------
 MENUZ:
   call S5EXIT
+  ld a,1
+  ld (MON),a
   ld hl,7EAFh
+  ret
+; ---------- presentacion en color: 8502h (call AA7Ch) y CCE1h (call D252h) ----------
+PRESH:
+  call RCALLP
+  dw PSHOW
+  jp 0AA7Ch
+PRESD:
+  call 0D252h
+  call RCALLP
+  dw PFRAME
+  ret
+
+; ---------- llamada a una rutina de la ROM (banco 9 o 10) con todos los registros guardados ----------
+; uso: call RCALLM / dw rutina
+RCALLP:
+  push af
+  ld a,PBANK
+  jr rc_0
+RCALLM:
+  push af
+  ld a,MBANK
+rc_0:
+  ld (RBANKV),a
+  pop af
+  ex (sp),hl
+  push de
+  ld e,(hl)
+  inc hl
+  ld d,(hl)
+  inc hl
+  ld (RADDR),de
+  pop de
+  ex (sp),hl
+  push af
+  push bc
+  push de
+  push hl
+  push ix
+  push iy
+  exx
+  push bc
+  push de
+  push hl
+  ex af,af'
+  push af
+  call ROMON
+  ld a,(RBANKV)
+  ld (6000h),a
+  ld hl,(RADDR)
+  call rc_j
+  call ROMOFF
+  pop af
+  ex af,af'
+  pop hl
+  pop de
+  pop bc
+  exx
+  pop iy
+  pop ix
+  pop hl
+  pop de
+  pop bc
+  pop af
+  ret
+rc_j:
+  jp (hl)
+RBANKV: db 0
+RADDR:  dw 0
+
+; ---------- pagina 2 (fondo de la cancha y marcador) desde la ROM tras usarla el modo M ----------
+PG2LOAD:
+  xor a
+  ld (MPG2),a
+  call ROMON
+  ld a,5
+  ld (6000h),a
+  ld a,4
+  ld bc,4000h
+  call PGUP
+  ld a,6
+  ld (6000h),a
+  ld a,5
+  ld bc,2000h
+  call PGUP
+  ld a,7
+  out (99h),a
+  ld a,8Eh
+  out (99h),a
+  jp ROMOFF
+PGUP:
+  out (99h),a
+  ld a,8Eh
+  out (99h),a
+  xor a
+  out (99h),a
+  ld a,40h
+  out (99h),a
+  ld hl,4000h
+pg_l:
+  ld a,(hl)
+  out (98h),a
+  inc hl
+  dec bc
+  ld a,b
+  or c
+  jr nz,pg_l
   ret
 ; ---------- 8538h (call 91B5h): vuelta al juego tras el descanso -> G4 ----------
 RESUMH:
@@ -744,6 +927,10 @@ S5ENTER:
   ld a,(S5ON)
   or a
   ret nz
+  ld (MON),a
+  ld a,(MPG2)
+  or a
+  call nz,PG2LOAD
   ld a,(0FFE8h)
   and 2
   ld a,6
@@ -797,26 +984,22 @@ ENTCMD:
   db 0,0,0
 
 S5EXIT:
+  xor a
+  ld (MLISTN),a
+  ld a,(MDISP)
+  or a
+  jr z,sx_1
+  xor a
+  ld (MDISP),a
+  call G2MODE
+sx_1:
   ld a,(S5ON)
   or a
   ret z
-  call VWAIT
   xor a
   ld (S5ON),a
-  ld (FLIPREQ),a
   ld (REPLAY),a
-  di
-  ld a,02h
-  out (99h),a
-  ld a,80h
-  out (99h),a
-  ld a,76h
-  out (99h),a
-  ld a,82h
-  out (99h),a
-  ei
-  ld hl,PALDEF
-  call SETPAL
+  call G2MODE
   ; codigo original del menu en O1 y O2
   call ROMON
   ld a,BANKE
@@ -834,6 +1017,60 @@ S5EXIT:
   ld bc,0B40h
   ldir
   jp ROMOFF
+
+G2MODE:
+  call VWAIT
+  xor a
+  ld (FLIPREQ),a
+  di
+  ld a,02h
+  out (99h),a
+  ld a,80h
+  out (99h),a
+  ld a,76h
+  out (99h),a
+  ld a,82h
+  out (99h),a
+  ei
+  ld hl,PALDEF
+  jp SETPAL
+
+; ---------- B1FEh fuera del partido: volcado original y, en el modo M, la vuelta en G4 ----------
+MUPL:
+  ld hl,0C298h
+  call 0B201h
+  ld a,(MON)
+  or a
+  ret z
+  ld a,(MDISP)
+  or a
+  jr nz,mu_f
+  xor a
+mu_c:
+  ld (MROW),a
+  call RCALLM
+  dw MCONVR
+  ld a,(MROW)
+  inc a
+  cp 24
+  jr c,mu_c
+  call RCALLM
+  dw MSTART
+mu_f:
+  ei
+mu_w:
+  ld a,(FLIPREQ)
+  or a
+  jr nz,mu_w
+  call RCALLM
+  dw MFRAME
+  ld a,(DRAWPG)
+  inc a
+  ld (FLIPREQ),a
+  dec a
+  xor 1
+  ld (DRAWPG),a
+  ret
 
 ; HL -> 32 bytes de paleta
 SETPAL:
@@ -2113,6 +2350,7 @@ def blockE_data(P):
 def build(P):
     """-> (bloques ensamblados, etiquetas, atlas, fondo)"""
     canvas, ent, remap, bg = blockE_data(P)
+    CUR['ent'], CUR['remap'] = ent, remap
     lut = SA.g2lut()
     srcA = SRCA + dbs(pal_bytes(SA.PAL), 'PALS5') + dbs(pal_bytes({i: c for i, c in enumerate(SA.DEF)}), 'PALDEF')
     srcE = dbs(ent, 'ATAB') + dbs(remap, 'REMAP') + SRCE
@@ -2185,10 +2423,13 @@ def apply(F1, F2, F3):
     p3(0xA1E1, [0xCD, 0xBF, 0xA0], [0xCD] + w(L['RESTH']))
     p3(0x8538, [0xCD, 0xB5, 0x91], [0xCD] + w(L['RESUMH']))
     p3(0x8508, [0x21, 0xAF, 0x7E], [0xCD] + w(L['MENUZ']))
+    p3(0x8502, [0xCD, 0x7C, 0xAA], [0xCD] + w(L['PRESH']))
+    p3(0xCCE1, [0xCD, 0x52, 0xD2], [0xCD] + w(L['PRESD']))
     p1(0xD4A0, [0xCD, 0xC4, 0xD4], [0xCD] + w(L['VBLHE']))
     p1(0xD4CA, [0xCD, 0x01, 0xD5], [0xCD] + w(L['CLSH']))
     p1(0xD930, [0xCD, 0xC1, 0xD8], [0xCD] + w(L['PRCH']))
     p1(0xD252, [0x21, 0x7E, 0x00], [0xC3] + w(L['D252H']))
+    p1(0xD247, [0x21, 0x3E, 0x00, 0x18, 0x09], [0xC3] + w(L['D247H']) + [0, 0])
     # registros del VDP que carga LIB_INIT: G2 con las tablas en el banco 7
     p1(0xD1C4, [0x02, 0xE0, 0x06, 0xFF, 0x03, 0x36, 0x07, 0x04], [0x02, 0xE0, 0x76, 0xFF, 0x3B, 0x36, 0x07, 0x04])
     # bloque B: la parte que cae dentro del fichero 1 (DC18h-DD18h)
