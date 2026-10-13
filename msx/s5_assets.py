@@ -48,7 +48,9 @@ def mock():
 # cajas de los jugadores en el montaje (x0, y0, x1, y1 inclusive)
 BOXES = [(30, 54, 57, 97), (125, 54, 155, 98)]
 
-def background(bits):
+HOOP_MASK = None     # (y, x) de pantalla tapados por algun fotograma de red (se rellena desde s5_pieces)
+
+def background(bits, P=None):
     """bits: 112x256 (fondo del juego, filas de pantalla 8..119) -> indices 192x256.
     Dentro de las cajas de los jugadores: en la pista (y>=64) el color sale de la clasificacion del
     bitmap (court2); arriba se propaga desde los vecinos con el mismo bit."""
@@ -60,6 +62,12 @@ def background(bits):
     B = np.zeros((192, 256), bool); B[8:120] = bits
     known = np.ones((192, 256), bool)
     for x0, y0, x1, y1 in BOXES: known[y0:y1 + 1, x0:x1 + 1] = False
+    if P is not None:                     # quitar las redes del montaje: se dibujan como piezas
+        for base, (x0, y0) in HOOP_POS.items():
+            for k in range(5):
+                for j, row in enumerate(P.chars(base + k)):
+                    for i, c in enumerate(row):
+                        if c != '.': known[y0 + j, x0 + i] = False
     T = court2.classify(bits)
     cmap = {court2.PARQ: PARQ, court2.TEAL: TEAL, court2.WHITE: WHITE}
     for y in range(64, 120):
