@@ -238,7 +238,7 @@ def build(ref_cas):
     q = DATA0
     for st, data in blobs:
         rom[q:q + len(data)] = data; q += len(data)
-    rom[4 * 0x4000:5 * 0x4000] = s5_patch.bank4(d3)
+    rom[4 * 0x4000:5 * 0x4000] = s5_patch.bank4(d3, (files[1][0], files[1][3]))
     for bank, va, ln in UPLOADS:
         rom[bank * 0x4000:bank * 0x4000 + ln] = vram[va:va + ln]
     rom[8 * 0x4000 + 0x2000:9 * 0x4000] = vram[0x0E000:0x10000]

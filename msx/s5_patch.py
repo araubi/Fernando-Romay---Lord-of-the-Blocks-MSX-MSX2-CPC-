@@ -38,7 +38,7 @@ CK = 0x8320                        # 288 sumas de control del marcador
 RECTS0, RECTS1 = 0x8440, 0x8470    # 12 rectangulos x 4 bytes por pagina
 NRECT = 12
 BANKE = 4                          # banco de la ROM: E (0000h), O1 (1000h), O2 (1400h), originales (2000h, 2400h)
-ROM_O1, ROM_O2, ROM_O1ORIG, ROM_O2ORIG, ROM_CK = 0x1000, 0x1400, 0x2000, 0x2400, 0x2800
+ROM_O1, ROM_O2, ROM_O1ORIG, ROM_O2ORIG, ROM_CK, ROM_MENU = 0x1000, 0x1400, 0x2000, 0x2400, 0x2800, 0x3000
 BLANKCK = 0xEF                     # suma de control de una celda vacia (patron 0, color 11h)
 
 COMMON = f"""
@@ -64,6 +64,7 @@ ROMO2    equ {0x4000 + ROM_O2}
 ROMO1OR  equ {0x4000 + ROM_O1ORIG}
 ROMO2OR  equ {0x4000 + ROM_O2ORIG}
 ROMCK    equ {0x4000 + ROM_CK}
+ROMMENU  equ {0x4000 + ROM_MENU}
 BLANKCK  equ {BLANKCK}
 """
 
@@ -150,7 +151,12 @@ up_s5:
   ld (DRAWPG),a
   xor a
   ld (FSTATE),a
-  jp SBROT
+  ld a,(FRESH)
+  or a
+  jp z,SBROT
+  xor a
+  ld (FRESH),a
+  jp SBFULL
 ; THROT: esperar hasta que hayan pasado A fotogramas desde la ultima vez
 THROT:
   ld b,a
@@ -709,11 +715,23 @@ RPLH:
 
 ; ---------- entrada al menu: charsel MENUH (call) y A0A1h (jp) ----------
 MENUX:
-  call S5EXIT
-  jp 0CF36h
+  jp S5EXIT
 MENUY:
   call S5EXIT
   jp 0A53Ah
+; ---------- A1E1h (call A0BFh): pantalla de descanso / fin -> G2 con la cortinilla original ----------
+RESTH:
+  call S5EXIT
+  jp 0A0BFh
+; ---------- 8508h (ld hl,7EAFh): menu principal -> G2 y graficos del menu ----------
+MENUZ:
+  call S5EXIT
+  ld hl,7EAFh
+  ret
+; ---------- 8538h (call 91B5h): vuelta al juego tras el descanso -> G4 ----------
+RESUMH:
+  call S5ENTER
+  jp 91B5h
 """
 
 # =============================================================================================
@@ -772,6 +790,7 @@ se_n:
   inc a
   ld (DRAWPG),a
   ld (S5ON),a
+  ld (FRESH),a
   jp 0D4F0h
 ENTCMD:
   dw 0,512,0,0,256,192
@@ -809,6 +828,10 @@ S5EXIT:
   ld hl,ROMO2OR
   ld de,ORGO2
   ld bc,LENO2
+  ldir
+  ld hl,ROMMENU
+  ld de,ORGE
+  ld bc,0B40h
   ldir
   jp ROMOFF
 
@@ -1349,6 +1372,8 @@ dc_n:
   ret
 
 SETEND:
+  xor a
+  ld (FRESH),a
 se_d:
   ld hl,DIRTY
   ld c,15
@@ -2157,6 +2182,9 @@ def apply(F1, F2, F3):
     p3(0xA521, [0x11, 0x98, 0xC2], [0xC3] + w(L['CROWDT']))
     p3(0xA0BF, [0xDD, 0x21, 0xAC, 0xD0], [0xC3] + w(L['WIPET']) + [0])
     p3(0xA0A1, [0xC3, 0x3A, 0xA5], [0xC3] + w(L['MENUY']))
+    p3(0xA1E1, [0xCD, 0xBF, 0xA0], [0xCD] + w(L['RESTH']))
+    p3(0x8538, [0xCD, 0xB5, 0x91], [0xCD] + w(L['RESUMH']))
+    p3(0x8508, [0x21, 0xAF, 0x7E], [0xCD] + w(L['MENUZ']))
     p1(0xD4A0, [0xCD, 0xC4, 0xD4], [0xCD] + w(L['VBLHE']))
     p1(0xD4CA, [0xCD, 0x01, 0xD5], [0xCD] + w(L['CLSH']))
     p1(0xD930, [0xCD, 0xC1, 0xD8], [0xCD] + w(L['PRCH']))
@@ -2180,7 +2208,7 @@ def ext():
     return o
 
 
-def bank4(f3):
+def bank4(f3, f2=None):
     """banco 4 de la ROM: E, O1, O2 y el codigo original del menu (de la imagen final)"""
     out, L, canvas, bg = CUR['build']
     CUR['orig_O1'] = bytes(f3[ORGO1 - 0x84D0:LIMO1 - 0x84D0])
@@ -2194,4 +2222,6 @@ def bank4(f3):
     b[ROM_O2ORIG:ROM_O2ORIG + len(CUR['orig_O2'])] = CUR['orig_O2']
     sbimg, ck = SA.sb_prerender()
     b[ROM_CK:ROM_CK + 288] = ck
+    s2, d2 = f2
+    b[ROM_MENU:ROM_MENU + 0xB40] = d2[0xC394 - s2:0xC394 - s2 + 0xB40]
     return bytes(b)
