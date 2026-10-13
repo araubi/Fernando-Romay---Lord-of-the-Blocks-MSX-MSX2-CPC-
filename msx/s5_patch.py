@@ -877,6 +877,7 @@ RADDR:  dw 0
 PG2LOAD:
   xor a
   ld (MPG2),a
+  ld (CKVALID),a
   call ROMON
   ld a,5
   ld (6000h),a
