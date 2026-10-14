@@ -26,7 +26,7 @@ MLIST, MRL0, MRL1, MVARS = 0xBD20, 0xBD60, 0xBDE8, 0xBE70
 NMLIST, NRL = 16, 32
 # puntos de entrada fijos (tabla de saltos al principio del codigo de cada banco)
 MCODE = 0x4600
-ENT_M = ['MCONVR', 'MSTART', 'MFRAME', 'MMARKC', 'MMARKR']
+ENT_M = ['MCONVR', 'MSTART', 'MFRAME', 'MMARKC', 'MMARKR', 'MDIGPB']
 ENT_P = ['PSTART', 'PFRAME', 'PSHOW']
 
 
@@ -66,6 +66,7 @@ MC1   equ {MVARS + 17}
 MDR   equ {MVARS + 18}
 CVPB  equ {MVARS + 19}
 SWAPPED equ 8231h
+PBUF  equ 8240h
 MT0   equ 4000h
 CBB   equ 4400h
 CXX   equ 4500h
@@ -132,6 +133,7 @@ SRCM = """
   jp MFRAME_
   jp MMARKC_
   jp MMARKR_
+  jp MDIGPB_
 
 ; ---------- fila MROW entera -> pagina 2, sumas y marcas a cero ----------
 MCONVR_:
@@ -145,11 +147,12 @@ MCONVR_:
   ld (CVC),a
   ld a,32
   ld (CVN),a
-  call CONV
   ld a,(CVR)
   call CKROWP
   ld b,32
   call CKRUN
+  call SBDIG
+  call CONV
   ld a,(CVR)
   call DIRTROW
   ld b,32
@@ -318,7 +321,6 @@ RUNCONV:
   ld a,(CVN)
   ld b,a
   call RDCELLS
-  call CONV
   ld a,(CVR)
   call CKROWP
   ld a,(CVC)
@@ -328,6 +330,8 @@ RUNCONV:
   ld a,(CVN)
   ld b,a
   call CKRUN
+  call SBDIG
+  call CONV
   ; las mismas celdas en las paginas 0 y 1 (las piezas que las pisen se restauran luego)
   xor a
   call CONVP
@@ -719,6 +723,67 @@ mm_rn:
   inc a
   jr mm_rl
 
+; ---------- cifras de 7 segmentos en la fila 18 del marcador ----------
+; SBDIG: en el descanso (bufer en la fila 1) y fila 18: cambiar las cifras de PATB
+SBDIG:
+  ld a,(0B206h)
+  cp 1
+  ret nz
+  ld a,(CVR)
+  cp 18
+  ret nz
+  ld hl,PATB
+  ld a,(CVN)
+  ld b,a
+  jr DIGSUB
+; desde RDCELL (partido): la celda leida en PBUF
+MDIGPB_:
+  ld hl,PBUF
+  ld b,1
+; DIGSUB: HL = patrones (8 bytes por celda), B = celdas
+DIGSUB:
+ds_c:
+  push bc
+  push hl
+  ld de,FONTD
+  ld c,10
+ds_g:
+  push hl
+  push de
+  ld b,8
+ds_b:
+  ld a,(de)
+  cp (hl)
+  jr nz,ds_n
+  inc hl
+  inc de
+  djnz ds_b
+  pop de
+  pop hl
+  ex de,hl
+  ld bc,DIGD-FONTD
+  add hl,bc
+  ld bc,8
+  ldir
+  jr ds_x
+ds_n:
+  pop de
+  pop hl
+  push hl
+  ld hl,8
+  add hl,de
+  ex de,hl
+  pop hl
+  dec c
+  jr nz,ds_g
+ds_x:
+  pop hl
+  ld de,8
+  add hl,de
+  pop bc
+  djnz ds_c
+  ret
+
 ; ---------- conversion G2 -> G4 ----------
 ; RDCELLS: D = fila, E = columna, B = celdas -> patrones en PATB, colores en COLB
 RDCELLS:
@@ -1059,7 +1124,7 @@ def tables():
 
 def bank_m(L, ent, remap, pal, jent):
     """banco 9: tablas (4000h-45FFh) + codigo (4600h)"""
-    src = CONSTS + f'NRL equ {NRL}\nJBANK equ {JBANK}\n' + SRCM + VDPR + dbs(ent, 'RATAB') + dbs(jent, 'RATABJ') + dbs(remap, 'RREMAP') + dbs(pal, 'RPALS')
+    src = CONSTS + f'NRL equ {NRL}\nJBANK equ {JBANK}\n' + SRCM + VDPR + dbs(ent, 'RATAB') + dbs(jent, 'RATABJ') + dbs(remap, 'RREMAP') + dbs(b''.join(__import__('digits').FONT), 'FONTD') + dbs(b''.join(__import__('digits').DIG), 'DIGD') + dbs(pal, 'RPALS')
     consts = {k: v for k, v in L.items()}
     code, LL, _ = assemble(src, MCODE, consts)
     b = bytearray(b'\xff' * 0x4000)

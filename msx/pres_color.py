@@ -56,6 +56,11 @@ def build():
     # la imagen inicial ya con el primer fotograma de cada parte
     for k in (0xC39A, 0xC5E0, 0xCBC0):
         y, c, h, w, a = frames[k]; pic[y:y + h, c * 8:c * 8 + w * 8] = a
+    import user_art
+    if user_art.D:
+        pic = user_art.D['pic'].copy()
+        for k, a in user_art.D['frames'].items():
+            y, c, h, w, _ = frames[k]; frames[k] = (y, c, h, w, a)
     return pic, frames
 
 if __name__ == '__main__':

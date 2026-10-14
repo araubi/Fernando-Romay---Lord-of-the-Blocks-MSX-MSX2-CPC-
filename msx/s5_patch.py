@@ -1322,7 +1322,13 @@ rd_2:
   ld c,a
   djnz rd_2
   ei
+  ld a,(CROW)
+  cp 18
   ld a,c
+  jr nz,rd_e
+  call RCALLM
+  dw MDIGPB
+rd_e:
   or 1
   ret
 
@@ -2543,6 +2549,9 @@ def blockE_data(P):
     bits = court_bits(f3)
     bg = SA.background(bits, P)
     cl, cr = SA.cheer_images(f3, bits, bg)
+    import user_art
+    bg = user_art.bg(bg)
+    if user_art.D: cl, cr = user_art.D['cheers']
     canvas, tab = SA.atlas_vram(P, {('*', 'cheerL'): cl, ('*', 'cheerR'): cr})
     CUR['tab'], CUR['P'] = tab, P
     PAIRS = {0x0A: 0x0B, 0x16: 0x17, 0x22: 0x23, 0x2E: 0x2F, 0x30: 0x33, 0x31: 0x34, 0x32: 0x35,

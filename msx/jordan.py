@@ -170,7 +170,7 @@ def edge_mask(a):
     return m
 
 
-def build(ps):
+def build(ps, raw=False):
     """ps: SA.all_pieces(P) -> {'R': {i: img}, 'I': {i: img}} con la forma de la pieza original"""
     out = {'R': {}, 'I': {}}
     for slot, ch in (('R', 'romay'), ('I', 'itu')):
@@ -193,6 +193,11 @@ def build(ps):
     for hi, ri in list(PAIRS.items())[:4]:
         out['I'][hi] = head_img(hi, ps[('itu', hi)].shape)
         out['R'][ri] = head_img(hi, ps[('romay', ri)].shape)
+    import user_art
+    if user_art.D and not raw:
+        for k, a in user_art.D['jordan'].items():
+            assert a.shape == out['I'][k].shape
+            out['I'][k] = a
     return out
 
 

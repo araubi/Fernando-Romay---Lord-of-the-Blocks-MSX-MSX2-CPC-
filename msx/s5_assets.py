@@ -105,6 +105,8 @@ HOOP_POS = {0x3E: (8, 32), 0x43: (224, 32)}          # posicion (x, y) de pantal
 CLS = {'S': SKIN, 'R': RED, 'L': DBLUE, 'W': WHITE, 'O': ORANGE, '#': BLACK, '.': 0}
 
 def hoop_images(P, M):
+    import user_art
+    if user_art.D: return dict(user_art.D['nets'])
     out = {}
     for base, (x0, y0) in HOOP_POS.items():
         ref = P.chars(base)
@@ -261,6 +263,9 @@ def sb_prerender():
             for b in list(P) + list(C):
                 s = (s + b) & 255; s = ((s << 1) | (s >> 7)) & 255
             ck[r * 32 + c] = s | 1
+            if r == 3:                                  # fila 18: cifras de 7 segmentos
+                import digits
+                P = digits.MAP.get(bytes(P), P)
             for l in range(8):
                 fg, bg = lut[C[l] >> 4], lut[C[l] & 15]
                 for k in range(8):
