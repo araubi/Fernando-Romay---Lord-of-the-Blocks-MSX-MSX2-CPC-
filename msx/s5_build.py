@@ -254,6 +254,14 @@ def build(ref_cas):
     rom[SM.PBANK * 0x4000:(SM.PBANK + 1) * 0x4000] = bp
     for n, a in SM.entries().items():
         assert (LM.get(n + '_') or LP.get(n + '_')) == a + 0 or True
+    import jordan
+    ps = SA.all_pieces(s5_patch.CUR['P'])
+    J = jordan.build(ps)
+    tab = s5_patch.CUR['tab']
+    orig = {ch: {i: img for (c, i), img in ps.items() if c == ch} for ch in ('romay', 'itu')}
+    for k, (ch, imgs) in enumerate((('romay', J['R']), ('itu', J['I']), ('romay', orig['romay']), ('itu', orig['itu']))):
+        bk = SM.JBANK + k
+        rom[bk * 0x4000:(bk + 1) * 0x4000] = SM.bank_j(tab, imgs, ch)
     rom[15 * 0x4000 + 0x3E00:15 * 0x4000 + 0x3E00 + 3 * 64] = bytes([0x32, 0xFF, 0x77]) * 64
     return bytes(rom), L, img, bg, vram
 

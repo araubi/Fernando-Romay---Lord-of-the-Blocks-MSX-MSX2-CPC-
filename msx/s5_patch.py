@@ -23,6 +23,9 @@ import re
 from asm import assemble
 import s5_assets as SA
 import s5_menu as SM
+import stats_patch as _stp, shot_patch as _shp
+_ST = _stp.asm()[1]
+_SH = _shp.asm()
 
 # ---------------------------------------------------------------------------------------------
 # memoria
@@ -67,10 +70,16 @@ ROMO2OR  equ {0x4000 + ROM_O2ORIG}
 ROMCK    equ {0x4000 + ROM_CK}
 ROMMENU  equ {0x4000 + ROM_MENU}
 BLANKCK  equ {BLANKCK}
+SPDO     equ {_ST['SPD']}
+SPDEXT   equ {_ST['EXT']}
+THRO     equ {_ST['THR']}
+DISTO    equ {_SH[1]}
+TOTO     equ {_SH[2]}
 MLIST    equ {SM.MLIST}
 NMLIST   equ {SM.NMLIST}
 MBANK    equ {SM.MBANK}
 PBANK    equ {SM.PBANK}
+JBANK    equ {SM.JBANK}
 """ + ''.join('%s equ %d\n' % kv for kv in SM.entries().items())
 
 # =============================================================================================
@@ -113,6 +122,8 @@ MLISTN:  db 0
 MROT:    db 0
 MRF0:    db 0
 MRF1:    db 0
+JORDAN:  db 0
+JATLAS:  db 0
 
 ; ---------- 9E6Fh: recordar el indice de la pieza ----------
 IDXH:
@@ -801,6 +812,8 @@ RESTH:
 ; ---------- 8508h (ld hl,7EAFh): menu principal -> G2 y graficos del menu ----------
 MENUZ:
   call S5EXIT
+  xor a
+  call JSYNC
   ld a,1
   ld (MON),a
   ld hl,7EAFh
@@ -870,8 +883,40 @@ rc_0:
   ret
 rc_j:
   jp (hl)
+RCALLX:
+  push af
+  ld a,(RBANKV)
+  jr rc_0
 RBANKV: db 0
 RADDR:  dw 0
+
+; ---------- nivel LEYENDA ----------
+; A673h: texto del nivel -> DE
+LEVSTR:
+  ld a,(93D2h)
+  ld de,0A7DAh
+  or a
+  ret z
+  ld de,0A7E2h
+  dec a
+  ret z
+  ld de,0A7EAh
+  dec a
+  ret z
+  ld de,LEYTXT
+  ret
+LEYTXT: db 76,69,89,69,78,68,65,255
+; 86A2h: dificultad de la maquina (LEYENDA = NBA)
+LEVAI:
+  ld a,(93D2h)
+  cp 3
+  jr c,la_1
+  ld a,2
+la_1:
+  sub 4
+  neg
+  dec a
+  ret
 
 ; ---------- pagina 2 (fondo de la cancha y marcador) desde la ROM tras usarla el modo M ----------
 PG2LOAD:
@@ -941,6 +986,7 @@ se_n:
   ld (FRMIN),a
   call 0D501h
   call LOADE
+  call JSET
   ld hl,PALS5
   call SETPAL
   di
@@ -1019,6 +1065,49 @@ sx_1:
   ldir
   jp ROMOFF
 
+; ---------- LEYENDA: en 1 jugador el rival es M. JORDAN ----------
+JSET:
+  xor a
+  ld (JORDAN),a
+  ld a,(93D2h)
+  cp 3
+  jr nz,jz_0
+  ld a,(93EAh)
+  or a
+  jr z,jz_0
+  ld a,1
+  ld (JORDAN),a
+  ld hl,JNAME
+  ld de,945Fh
+  ld bc,10
+  ldir
+  ld a,(SWAPPED)
+  add a,JBANK
+  jr JSYNC
+jz_0:
+  xor a
+; JSYNC: A = juego de piezas de Jordan que debe haber en el atlas (0, JBANK, JBANK+1)
+JSYNC:
+  ld hl,JATLAS
+  cp (hl)
+  ret z
+  push af
+  ld a,(hl)
+  or a
+  jr z,jy_1
+  add a,2
+  call JUP
+jy_1:
+  pop af
+  ld (JATLAS),a
+  or a
+  ret z
+JUP:
+  ld (RBANKV),a
+  call RCALLX
+  dw 4000h
+  ret
+JNAME: db 77,46,32,74,79,82,68,65,78,32
 G2MODE:
   call VWAIT
   xor a
@@ -1864,6 +1953,93 @@ WCMD:
 # =============================================================================================
 # E: atlas + repeticion ampliada (zona R: VRAM 1C000h, y 896-991, 128x96)
 SRCE = """
+; ---------- M. JORDAN (nivel LEYENDA, rival en 1 jugador: estructura IX = 9425h) ----------
+JC1:     db 0
+JC2:     db 0
+; velocidad: paso extra 2 de cada 5 (Itu: 1 de cada 5)
+JSPD:
+  ld a,(JORDAN)
+  or a
+  jp z,SPDO
+  ld a,ixl
+  cp 25h
+  jp nz,SPDO
+  call 9E47h
+  ret nz
+  ld a,(JC1)
+  inc a
+  cp 5
+  jr c,jp_1
+  xor a
+jp_1:
+  ld (JC1),a
+  cp 1
+  jr z,jp_n
+  cp 3
+  jp c,SPDEXT
+jp_n:
+  xor a
+  ret
+; cansancio: se recupera 1 de cada 3 (Romay: 1 de cada 5)
+JTHR:
+  ld a,(JORDAN)
+  or a
+  jp z,THRO
+  ld a,ixl
+  cp 25h
+  jp nz,THRO
+  ld a,(JC2)
+  inc a
+  cp 3
+  jr c,jt_1
+  xor a
+jt_1:
+  ld (JC2),a
+  or a
+  jr nz,jt_d
+  bit 7,(ix+9)
+  jr z,jt_d
+  ld a,(ix+9)
+  and 7Fh
+  jr z,jt_d
+  dec (ix+9)
+jt_d:
+  ld a,7
+  ld b,a
+  ret
+; punteria: termino de distancia como Itu (50) y error x0,9 x0,9
+JDIST:
+  push af
+  ld a,(JORDAN)
+  or a
+  jr z,jd_o
+  ld a,(93EBh)
+  rla
+  jr c,jd_o
+  pop af
+  ld bc,50
+  ret
+jd_o:
+  pop af
+  jp DISTO
+JTOT:
+  ld a,(JORDAN)
+  or a
+  jp z,TOTO
+  ld a,(93EBh)
+  rla
+  jp c,TOTO
+  ld bc,9
+  call 0D724h
+  ld bc,10
+  call 0D73Bh
+  ld bc,9
+  call 0D724h
+  ld bc,10
+  call 0D73Bh
+  ld a,r
+  and 0Fh
+  ret
 RFIRST:  db 0
 RPXP:    db 0
 RFMIN:   db 8
@@ -2327,6 +2503,7 @@ def blockE_data(P):
     bg = SA.background(bits, P)
     cl, cr = SA.cheer_images(f3, bits, bg)
     canvas, tab = SA.atlas_vram(P, {('*', 'cheerL'): cl, ('*', 'cheerR'): cr})
+    CUR['tab'], CUR['P'] = tab, P
     PAIRS = {0x0A: 0x0B, 0x16: 0x17, 0x22: 0x23, 0x2E: 0x2F, 0x30: 0x33, 0x31: 0x34, 0x32: 0x35,
              0x36: 0x3A, 0x37: 0x3B, 0x38: 0x3C, 0x39: 0x3D}
     PAIRS.update({v: k for k, v in list(PAIRS.items())})
@@ -2425,6 +2602,16 @@ def apply(F1, F2, F3):
     p3(0x8538, [0xCD, 0xB5, 0x91], [0xCD] + w(L['RESUMH']))
     p3(0x8508, [0x21, 0xAF, 0x7E], [0xCD] + w(L['MENUZ']))
     p3(0x8502, [0xCD, 0x7C, 0xAA], [0xCD] + w(L['PRESH']))
+    # LEYENDA: cuarto nivel, texto, dificultad de la maquina
+    p3(0xA6D1, [0xFE, 0x03], [0xFE, 0x04])
+    p3(0xA673, [0x11, 0xDA, 0xA7, 0x3A, 0xD2, 0x93], [0xCD] + w(L['LEVSTR']) + [0x18, 0x0E, 0x00])
+    p3(0x86A2, [0x3A, 0xD2, 0x93, 0xE6, 0x03, 0xD6, 0x04, 0xED, 0x44, 0x3D], [0xCD] + w(L['LEVAI']) + [0] * 7)
+    # capacidades de Jordan (codigo en E, solo en el partido)
+    for site in (0x9CF4, 0x9D1D, 0x9D83, 0x9DB3):
+        p3(site, [0xCD] + w(_ST['SPD']), [0xCD] + w(L['JSPD']))
+    p3(0x9EE3, [0xCD] + w(_ST['THR']), [0xCD] + w(L['JTHR']))
+    p3(0x8B35, [0xCD] + w(_SH[1]), [0xCD] + w(L['JDIST']))
+    p3(0x8B84, [0xCD] + w(_SH[2]), [0xCD] + w(L['JTOT']))
     p3(0xCCE1, [0xCD, 0x52, 0xD2], [0xCD] + w(L['PRESD']))
     p1(0xD4A0, [0xCD, 0xC4, 0xD4], [0xCD] + w(L['VBLHE']))
     p1(0xD4CA, [0xCD, 0x01, 0xD5], [0xCD] + w(L['CLSH']))

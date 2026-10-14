@@ -131,3 +131,27 @@ def export_pres(outdir):
     legend(d, MARGIN, y)
     im2.save('%s/MSX2_S5_presentacion.png' % outdir)
     return im2
+
+
+def export_jordan(outdir, P):
+    """M. Jordan: las 4 cabezas y todas las piezas del cuerpo (version sobre las piezas de Romay)"""
+    import jordan as JD
+    ps = SA.all_pieces(P)
+    J = JD.build(ps)['R']
+    ks = sorted(J)
+    cols = 10
+    cw, chh = 26, 44
+    W = MARGIN * 2 + cols * (cw * S + 8)
+    rows = (len(ks) + cols - 1) // cols
+    H = MARGIN * 2 + TITLE_H * 2 + rows * (chh * S + TITLE_H) + 130
+    im = Image.new('RGB', (W, H), (40, 40, 48)); d = ImageDraw.Draw(im)
+    y = MARGIN
+    d.text((MARGIN, y), 'M. JORDAN: piezas (magenta = transparente). Numero = pieza del juego. Cabezas: 0A, 16, 22, 2E', fill=(255, 255, 160))
+    y += TITLE_H
+    for n, k in enumerate(ks):
+        x = MARGIN + (n % cols) * (cw * S + 8); yy = y + (n // cols) * (chh * S + TITLE_H)
+        d.text((x, yy), '%02X' % k, fill=(200, 200, 200))
+        paste(im, J[k], x, yy + 12, True)
+    legend(d, MARGIN, y + rows * (chh * S + TITLE_H))
+    im.save('%s/MSX2_S5_jordan.png' % outdir)
+    return im

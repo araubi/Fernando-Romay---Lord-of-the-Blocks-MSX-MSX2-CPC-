@@ -17,7 +17,7 @@ def asm():
     L('skip'); b(0x3C,0xC9)                            # A=1 -> NZ: sin paso extra
     L('P1'); b(0x3A); w(CNT['c1']); b(0x3C,0xFE,0x05); jr(0x38,'s2'); b(0xAF)
     L('s2'); b(0x32); w(CNT['c1']); b(0xA7); jr(0x20,'done')
-    b(0xE3,0x7D,0xE3)                                  # EX (SP),HL / LD A,L / EX (SP),HL
+    L('EXT'); b(0xE3,0x7D,0xE3)                                  # EX (SP),HL / LD A,L / EX (SP),HL
     b(0xFE,0xF7); jr(0x28,'dL'); b(0xFE,0x20); jr(0x28,'iL'); b(0xFE,0x86); jr(0x28,'dH')
     b(0x24); jr(0x18,'done')
     L('dL'); b(0x2D); jr(0x18,'done')

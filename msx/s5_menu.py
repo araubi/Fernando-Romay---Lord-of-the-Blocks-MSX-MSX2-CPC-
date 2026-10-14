@@ -19,6 +19,7 @@ from asm import assemble
 import s5_assets as SA
 
 MBANK, PBANK = 9, 10
+JBANK = 11                 # 11: Jordan en los sitios de Romay, 12: en los de Itu; 13/14: originales
 # RAM de trabajo (B498h-C297h)
 PATB, COLB, MDIRT, MCK, MROWD = 0xB500, 0xB600, 0xB700, 0xBA00, 0xBD00
 MLIST, MRL0, MRL1, MVARS = 0xBD20, 0xBD60, 0xBDE8, 0xBE70
@@ -1068,3 +1069,86 @@ def bank_p(L, pal):
     code, LL, _ = assemble(src, 0x4000, dict(L))
     assert len(code) <= 0x4000, hex(len(code))
     return bytes(code) + b'\xff' * (0x4000 - len(code)), LL
+
+
+# ---------------------------------------------------------------------------------------------
+# bancos 11-14: piezas de Jordan / originales escritas en los rectangulos del atlas de un personaje
+SRCJ = """
+  ld hl,JRECTS
+jr_n:
+  ld e,(hl)
+  inc hl
+  ld d,(hl)
+  inc hl
+  ld a,d
+  cp 0FFh
+  jr z,jr_e
+  ld a,(hl)
+  ld (JXB),a
+  inc hl
+  ld a,(hl)
+  ld (JWB),a
+  inc hl
+  ld b,(hl)
+  inc hl
+jr_l:
+  push bc
+  ld a,e
+  rla
+  ld a,d
+  rla
+  out (99h),a
+  ld a,8Eh
+  out (99h),a
+  ld a,e
+  rrca
+  and 80h
+  ld c,a
+  ld a,(JXB)
+  or c
+  out (99h),a
+  ld a,e
+  and 7Eh
+  rrca
+  or 40h
+  out (99h),a
+  ld a,(JWB)
+  ld b,a
+jr_b:
+  ld a,(hl)
+  out (98h),a
+  inc hl
+  djnz jr_b
+  inc de
+  pop bc
+  djnz jr_l
+  jr jr_n
+jr_e:
+  ld a,7
+  out (99h),a
+  ld a,8Eh
+  out (99h),a
+  ret
+"""
+
+
+def bank_j(tab, imgs, ch):
+    """imgs: {indice: imagen con la forma de la pieza} ; tab: atlas (clave -> x, y, w, h, dx, dy)"""
+    data = bytearray()
+    for (c, i), (x, y, w, h, dx, dy) in sorted(tab.items(), key=lambda kv: str(kv[0])):
+        if c != ch or i not in imgs: continue
+        img = imgs[i]
+        sub = img[dy:dy + h, dx:dx + w]
+        rest = img.copy(); rest[dy:dy + h, dx:dx + w] = 0
+        assert not rest.any(), ('pieza fuera del rectangulo', ch, hex(i))
+        wb = (w + 1) // 2
+        a = np.zeros((h, wb * 2), np.uint8); a[:, :w] = sub
+        assert x % 2 == 0
+        data += bytes([y & 255, y >> 8, x // 2, wb, h])
+        data += bytes(((a[:, 0::2] << 4) | a[:, 1::2]).astype(np.uint8).flatten())
+    data += bytes([0xFF, 0xFF])
+    src = CONSTS + f"JXB equ {MVARS + 24}\nJWB equ {MVARS + 25}\n" + SRCJ + "JRECTS:\n"
+    code, LL, _ = assemble(src, 0x4000, {})
+    out = bytes(code) + bytes(data)
+    assert len(out) <= 0x4000, (ch, hex(len(out)))
+    return out + b'\xff' * (0x4000 - len(out))
