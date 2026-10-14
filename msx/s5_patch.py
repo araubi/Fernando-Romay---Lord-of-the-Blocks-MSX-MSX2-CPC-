@@ -183,7 +183,7 @@ ph_s5:
 COPYH:
   ld a,(S5ON)
   or a
-  ret nz
+  jp nz,COPYS
   ld hl,0B498h
   jp 0B1F5h
 
@@ -336,7 +336,7 @@ fb_full:
   ld a,(DRAWPG)
   ld (CMDB+7),a
   ld a,0D0h
-  jp VCMD
+  jr VCMD
 FULLCMD:
   dw 0,520,0,8,256,112
   db 0,0,0
@@ -2034,6 +2034,12 @@ WCMD:
 # =============================================================================================
 # E: atlas + repeticion ampliada (zona R: VRAM 1C000h, y 896-991, 128x96)
 SRCE = """
+; ---------- B1F2h en G4: el original vacia aqui su bufer (empieza el dibujo del fotograma); si ya se
+; habian dibujado piezas (montaje de un tiro libre, cambios de plano) se borran al dibujar la siguiente ----------
+COPYS:
+  xor a
+  ld (FSTATE),a
+  ret
 ; ---------- M. JORDAN (nivel LEYENDA, rival en 1 jugador: estructura IX = 9425h) ----------
 JC1:     db 0
 JC2:     db 0

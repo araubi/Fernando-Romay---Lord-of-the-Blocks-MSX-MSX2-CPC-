@@ -74,6 +74,7 @@ CVPB  equ {MVARS + 19}
 MPEND equ {MVARS + 20}
 MBUD  equ {MVARS + 21}
 SUBT  equ {MVARS + 22}
+UV    equ {MVARS + 26}
 SWAPPED equ 8231h
 PBUF  equ 8240h
 MT0   equ 4000h
@@ -152,7 +153,7 @@ MCONVR_:
   ; 96..111: ya en G4 (pagina 2 a la vista), franjas de 12 lineas de la pagina 2 a las paginas 0 y 1
   ld a,(MROW)
   cp 96
-  jr nc,MCOPY
+  jp nc,MCOPY
   ld c,a
   srl a
   srl a
@@ -175,7 +176,14 @@ MCONVR_:
   ld b,8
   call CKRUN
   call SBDIG
+  ; las 8 celdas de un solo color (fondos, recuadros): relleno con el VDP en lugar de convertir
+  call UNIF
+  jr nz,mc_cv
+  call FILLQ
+  jr mc_dn
+mc_cv:
   call CONV
+mc_dn:
   ld a,(CVR)
   call DIRTROW
   call CVCOFS
@@ -224,6 +232,164 @@ mcp_1:
   ld (CMDB+7),a
   ld a,0D0h
   jp RVCMD
+; FILLQ: A = byte; las 8 celdas (CVR, CVC) de la pagina 2 de ese color (por la CPU: en G2 no hay ordenes del VDP)
+FILLQ:
+  ld (UV),a
+  ld a,4
+  ld (CVPB),a
+  xor a
+  ld (CVK),a
+fq_l:
+  ld a,(CVR)
+  add a,a
+  add a,a
+  add a,a
+  ld hl,CVK
+  add a,(hl)
+  ld l,a
+  rlca
+  and 1
+  ld h,a
+  ld a,(CVPB)
+  add a,h
+  out (99h),a
+  ld a,8Eh
+  out (99h),a
+  ld a,l
+  rrca
+  and 80h
+  ld h,a
+  ld a,(CVC)
+  add a,a
+  add a,a
+  or h
+  out (99h),a
+  ld a,l
+  and 7Eh
+  rrca
+  or 40h
+  out (99h),a
+  ld a,(UV)
+  ld c,98h
+  out (c),a
+  nop
+  out (c),a
+  nop
+  out (c),a
+  nop
+  out (c),a
+  nop
+  out (c),a
+  nop
+  out (c),a
+  nop
+  out (c),a
+  nop
+  out (c),a
+  nop
+  out (c),a
+  nop
+  out (c),a
+  nop
+  out (c),a
+  nop
+  out (c),a
+  nop
+  out (c),a
+  nop
+  out (c),a
+  nop
+  out (c),a
+  nop
+  out (c),a
+  nop
+  out (c),a
+  nop
+  out (c),a
+  nop
+  out (c),a
+  nop
+  out (c),a
+  nop
+  out (c),a
+  nop
+  out (c),a
+  nop
+  out (c),a
+  nop
+  out (c),a
+  nop
+  out (c),a
+  nop
+  out (c),a
+  nop
+  out (c),a
+  nop
+  out (c),a
+  nop
+  out (c),a
+  nop
+  out (c),a
+  nop
+  out (c),a
+  nop
+  out (c),a
+  nop
+  ld hl,CVK
+  inc (hl)
+  ld a,(hl)
+  cp 8
+  jp c,fq_l
+  ret
+; UNIF: Z y A = byte G4 si las CVN celdas de PATB/COLB dan un solo color
+UNIF:
+  ld a,(CVN)
+  add a,a
+  add a,a
+  add a,a
+  ld b,a
+  ld de,PATB
+  call ULINE
+  ret nz
+  ld (UV),a
+un_l:
+  inc e
+  dec b
+  ret z
+  call ULINE
+  ret nz
+  ld hl,UV
+  cp (hl)
+  jr z,un_l
+  ret
+ULINE:
+  ld a,(de)
+  ld c,a
+  inc d
+  ld a,(de)
+  dec d
+  ld l,a
+  ld h,CBB/256
+  ld a,c
+  or a
+  jr z,ul_b
+  inc a
+  jr z,ul_f
+  inc h
+  ld a,(hl)
+  dec h
+  or a
+  ret nz
+ul_b:
+  ld a,(hl)
+  cp a
+  ret
+ul_f:
+  ld a,(hl)
+  inc h
+  xor (hl)
+  cp a
+  ret
 CVCOFS:
   ld a,(CVC)
   ld e,a
@@ -270,32 +436,32 @@ MROTX_:
 
 ; comprobacion rotativa: una fila por vuelta
 MROTCHK:
-  ; media fila por vuelta (MROT = 0..47)
+  ; un cuarto de fila por vuelta (MROT = 0..95)
   ld a,(MROT)
-  cp 48
+  cp 96
   jr c,mr_1
   xor a
 mr_1:
   ld c,a
   inc a
-  cp 48
+  cp 96
   jr c,mr_2
   xor a
 mr_2:
   ld (MROT),a
   ld a,c
   srl a
+  srl a
   ld d,a
   ld (CVR),a
   ld a,c
-  and 1
-  add a,a
+  and 3
   add a,a
   add a,a
   add a,a
   ld e,a
   push de
-  ld b,16
+  ld b,8
   call RDCELLS
   ld a,(CVR)
   call CKROWP
@@ -321,7 +487,7 @@ mr_l:
 mr_ok:
   inc hl
   ld a,e
-  cp 128
+  cp 64
   jr nz,mr_l
   ret
 
@@ -763,16 +929,33 @@ mq_bot:
 
 ; ---------- marcas (desde los enganches de impresion y D252h) ----------
 MMARKC_:
+  ; caracter impreso: su celda y la de la izquierda, convertidas ya (sin recorrer las marcas)
   ld a,(CROW)
   cp 24
   ret nc
-  ld d,a
+  ld (CVR),a
   ld a,(CCOL)
-  ld e,a
-  call MARK1
-  dec e
-  call MARK1
-  jp MDIRTY
+  cp 33
+  ret nc
+  ld c,a
+  ld b,2
+  or a
+  jr nz,mk_1
+  inc c
+  dec b
+mk_1:
+  dec c
+  ld a,c
+  cp 31
+  jr c,mk_2
+  ld c,31
+  ld b,1
+mk_2:
+  ld a,c
+  ld (CVC),a
+  ld a,b
+  ld (CVN),a
+  jp RUNCONV
 MARK1:
   ld a,e
   cp 32
