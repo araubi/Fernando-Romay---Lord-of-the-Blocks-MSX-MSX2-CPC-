@@ -30,6 +30,12 @@ ENT_M = ['MCONVR', 'MSTART', 'MFRAME', 'MMARKC', 'MMARKR', 'MDIGPB', 'MROTX', 'M
 ENT_P = ['PSTART', 'PFRAME', 'PSHOW']
 
 
+# retoque del usuario en la cabecera del menu (fila 2, columnas 18-20): patron original -> nuevo
+MFIX = [('0008f8ffffffffff', '000effffffffffff'), ('000000ffffffffff', '0000ffffffffffff'),
+        ('000808ffffffffff', '0008f8ffffffffff')]
+MFIX_TAB = b''.join(bytes.fromhex(a) for a, b in MFIX) + b''.join(bytes.fromhex(b) for a, b in MFIX)
+
+
 def entries():
     d = {n: MCODE + 3 * i for i, n in enumerate(ENT_M)}
     d.update({n: 0x4000 + 3 * i for i, n in enumerate(ENT_P)})
@@ -67,6 +73,7 @@ MDR   equ {MVARS + 18}
 CVPB  equ {MVARS + 19}
 MPEND equ {MVARS + 20}
 MBUD  equ {MVARS + 21}
+SUBT  equ {MVARS + 22}
 SWAPPED equ 8231h
 PBUF  equ 8240h
 MT0   equ 4000h
@@ -849,27 +856,93 @@ mm_rn:
 ; ---------- cifras de 7 segmentos en la fila 18 del marcador ----------
 ; SBDIG: en el descanso (bufer en la fila 1) y fila 18: cambiar las cifras de PATB
 SBDIG:
+  ld a,(CVR)
+  cp 2
+  jr z,sbd_m
   ld a,(0B206h)
   cp 1
   ret nz
   ld a,(CVR)
   cp 18
+  jr z,sbd_1
+  cp 20
   ret nz
+sbd_1:
+  ld hl,FONTT
+sbd_2:
+  ld (SUBT),hl
   ld hl,PATB
   ld a,(CVN)
   ld b,a
   jr DIGSUB
+; fila 2 del menu: retoque del usuario bajo las banderas de la cabecera
+sbd_m:
+  ld a,(CVN)
+  ld b,a
+  ld a,(CVC)
+  ld c,a
+  ld hl,PATB
+sm_l:
+  ld a,c
+  sub 18
+  cp 3
+  jr nc,sm_n
+  push bc
+  push hl
+  add a,a
+  add a,a
+  add a,a
+  ld e,a
+  ld d,0
+  push hl
+  ld hl,MFIXO
+  add hl,de
+  ex de,hl
+  pop hl
+  push hl
+  push de
+  ld b,8
+sm_c:
+  ld a,(de)
+  cp (hl)
+  jr nz,sm_x
+  inc hl
+  inc de
+  djnz sm_c
+  pop hl
+  ld de,24
+  add hl,de
+  pop de
+  ld bc,8
+  ldir
+  jr sm_y
+sm_x:
+  pop de
+  pop hl
+sm_y:
+  pop hl
+  pop bc
+sm_n:
+  ld de,8
+  add hl,de
+  inc c
+  djnz sm_l
+  ret
 ; desde RDCELL (partido): la celda leida en PBUF
 MDIGPB_:
+  ld hl,FONTT
+  ld (SUBT),hl
   ld hl,PBUF
   ld b,1
-; DIGSUB: HL = patrones (8 bytes por celda), B = celdas
+; DIGSUB: HL = patrones (8 bytes por celda), B = celdas; SUBT -> tabla (n, n patrones, a +80 los nuevos)
 DIGSUB:
 ds_c:
   push bc
   push hl
-  ld de,FONTD
-  ld c,10
+  ld de,(SUBT)
+  ld a,(de)
+  ld c,a
+  inc de
 ds_g:
   push hl
   push de
@@ -884,7 +957,7 @@ ds_b:
   pop de
   pop hl
   ex de,hl
-  ld bc,DIGD-FONTD
+  ld bc,80
   add hl,bc
   ld bc,8
   ldir
@@ -1247,7 +1320,7 @@ def tables():
 
 def bank_m(L, ent, remap, pal, jent):
     """banco 9: tablas (4000h-45FFh) + codigo (4600h)"""
-    src = CONSTS + f'NRL equ {NRL}\nJBANK equ {JBANK}\n' + SRCM + VDPR + dbs(ent, 'RATAB') + dbs(jent, 'RATABJ') + dbs(remap, 'RREMAP') + dbs(b''.join(__import__('digits').FONT), 'FONTD') + dbs(b''.join(__import__('digits').DIG), 'DIGD') + dbs(pal, 'RPALS')
+    src = CONSTS + f'NRL equ {NRL}\nJBANK equ {JBANK}\n' + SRCM + VDPR + dbs(ent, 'RATAB') + dbs(jent, 'RATABJ') + dbs(remap, 'RREMAP') + dbs(bytes([10]), 'FONTT') + dbs(b''.join(__import__('digits').FONT), 'FONTD') + dbs(b''.join(__import__('digits').DIG), 'DIGD') + dbs(MFIX_TAB, 'MFIXO') + dbs(pal, 'RPALS')
     consts = {k: v for k, v in L.items()}
     code, LL, _ = assemble(src, MCODE, consts)
     b = bytearray(b'\xff' * 0x4000)

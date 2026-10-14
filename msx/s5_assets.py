@@ -263,7 +263,7 @@ def sb_prerender():
             for b in list(P) + list(C):
                 s = (s + b) & 255; s = ((s << 1) | (s >> 7)) & 255
             ck[r * 32 + c] = s | 1
-            if r == 3:                                  # fila 18: cifras de 7 segmentos
+            if r in (3, 5):                             # filas 18 y 20: cifras de 7 segmentos (marcador y tiempo)
                 import digits
                 P = digits.MAP.get(bytes(P), P)
             for l in range(8):

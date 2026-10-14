@@ -1352,6 +1352,9 @@ rd_2:
   ei
   ld a,(CROW)
   cp 18
+  jr z,rd_d
+  cp 20
+rd_d:
   ld a,c
   jr nz,rd_e
   call RCALLM
@@ -2034,7 +2037,7 @@ SRCE = """
 ; ---------- M. JORDAN (nivel LEYENDA, rival en 1 jugador: estructura IX = 9425h) ----------
 JC1:     db 0
 JC2:     db 0
-; velocidad: paso extra 2 de cada 5 (Itu: 1 de cada 5)
+; velocidad: paso extra 7 de cada 10 (Itu: 1 de cada 5): medido, Itu +9%, Jordan +32% = Itu x1,1 x1,1
 JSPD:
   ld a,(JORDAN)
   or a
@@ -2046,16 +2049,13 @@ JSPD:
   ret nz
   ld a,(JC1)
   inc a
-  cp 5
+  cp 10
   jr c,jp_1
   xor a
 jp_1:
   ld (JC1),a
-  cp 1
-  jr z,jp_n
-  cp 3
+  cp 7
   jp c,SPDEXT
-jp_n:
   xor a
   ret
 ; cansancio: se recupera 1 de cada 3 (Romay: 1 de cada 5)

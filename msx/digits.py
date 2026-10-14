@@ -24,6 +24,8 @@ def glyph(n):
     return bytes(int(''.join(map(str, r)), 2) for r in g)
 
 DIG = [glyph(n) for n in range(10)]
+# retoques del usuario (plantilla marcador_digitos_0-9 devuelta)
+DIG = [bytes.fromhex(h) for h in ['3c66662466663c00', '0406060406060400', '3c06063c60603c00', '3c06063c06063c00', '2466663c06060400', '3c60603c06063c00', '3c60603c66663c00', '3c06060406060400', '3c66663c66663c00', '3c66663c06063c00']]
 MAP = dict(zip(FONT, DIG))
 
 if __name__ == '__main__':
