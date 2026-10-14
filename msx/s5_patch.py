@@ -124,6 +124,8 @@ MRF0:    db 0
 MRF1:    db 0
 JORDAN:  db 0
 JATLAS:  db 0
+JNAME: db 77,46,32,74,79,82,68,65,78,32
+LEYTXT: db 76,69,89,69,78,68,65,255
 
 ; ---------- 9E6Fh: recordar el indice de la pieza ----------
 IDXH:
@@ -893,6 +895,36 @@ RCALLX:
 RBANKV: db 0
 RADDR:  dw 0
 
+; ---------- CF63h (F2): RAM para la pagina 0 = el slot de la pagina 3 ----------
+; la busqueda original prueba antes el slot 0 y, si esta expandido (turbo R), cambia la pagina 3
+; mientras su propio codigo se ejecuta en la pagina 3
+F2RAM:
+  ld b,3
+  call 0D3CCh
+  ld (0D226h),a
+  ld h,0
+  call 0CF7Ah
+  xor a
+  ret
+; CF73h: volver a poner el slot de la pagina (D225h) sin cambiar la pagina 3 (en la pagina 0 solo
+; el slot primario: el registro de subslot del slot 0 no se ha tocado)
+F2REST:
+  ld a,(0D225h)
+  or a
+  jr z,fr_0
+  ld h,a
+  ld a,(0D221h)
+  jp 0024h
+fr_0:
+  ld a,(0D221h)
+  and 3
+  ld b,a
+  in a,(0A8h)
+  and 0FCh
+  or b
+  out (0A8h),a
+  ret
+
 ; ---------- nivel LEYENDA ----------
 ; A673h: texto del nivel -> DE
 LEVSTR:
@@ -908,8 +940,6 @@ LEVSTR:
   ret z
   ld de,LEYTXT
   ret
-JNAME: db 77,46,32,74,79,82,68,65,78,32
-LEYTXT: db 76,69,89,69,78,68,65,255
 ; 86A2h: dificultad de la maquina (LEYENDA = NBA)
 LEVAI:
   ld a,(93D2h)
@@ -2598,6 +2628,9 @@ def apply(F1, F2, F3):
     w = lambda v: [v & 255, v >> 8]
     p3 = lambda at, old, new: patch(F3, 0x84D0, at, old, new)
     p1 = lambda at, old, new: patch(F1, 0xB3B0, at, old, new)
+    p2 = lambda at, old, new: patch(F2, 0x8534, at, old, new)
+    p2(0xCF63, [0xCD, 0xFA, 0xD3], [0xCD] + w(L['F2RAM']))
+    p2(0xCF73, [0x3A, 0x25, 0xD2], [0xC3] + w(L['F2REST']))
     p3(0x9E6F, [0x87, 0x6F, 0x26, 0x00], [0xCD] + w(L['IDXH']) + [0x00])
     p3(0xB01C, [0x2A, 0x9A, 0xD0], [0xCD] + w(L['PIECEH']))
     p3(0xB1F2, [0x21, 0x98, 0xB4], [0xC3] + w(L['COPYH']))

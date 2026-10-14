@@ -22,6 +22,20 @@ b_hang:
   di
   halt
 b_msx2:
+  ; sin ganchos de interrupcion de la disquetera ni de otros cartuchos: el juego usa la RAM de
+  ; trabajo que hay por debajo de F380h
+  ld hl,0FD9Ah
+  ld (hl),0C9h
+  ld hl,0FD9Fh
+  ld (hl),0C9h
+  ld a,(002Dh)
+  ; turbo R: pasar a Z80 (el juego va a la velocidad de un MSX2)
+  cp 3
+  jr c,b_z80
+  ld a,80h
+  call 0180h
+  di
+b_z80:
   in a,(0A8h)
   rlca
   rlca

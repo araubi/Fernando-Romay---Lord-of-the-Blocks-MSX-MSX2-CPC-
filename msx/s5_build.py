@@ -166,7 +166,7 @@ cp_n:
   ld (CURP),hl
   ret
 VREGS:
-  db 0,02h, 1,0A0h, 2,76h, 3,0FFh, 4,3Bh, 5,36h, 6,07h, 7,04h, 8,0Ah, 10,07h, 14,07h, 15,0, 23,0, 0FFh
+  db 0,02h, 1,0A0h, 2,76h, 3,0FFh, 4,3Bh, 5,36h, 6,07h, 7,04h, 8,0Ah, 10,07h, 14,07h, 15,0, 23,0, 25,0, 26,0, 27,0, 0FFh
 UPTAB:
 {UPTAB}
   db 0FFh
