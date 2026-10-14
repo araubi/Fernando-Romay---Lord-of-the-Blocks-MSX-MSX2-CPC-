@@ -150,6 +150,21 @@ def back_head(a, cx=12.5, cy=8.5, rx=4.6, ry=5.6, rows=15):
     return a
 
 
+def debeard(a, rows=16):
+    """barba de Itu -> piel: negro entre pieles de la misma fila, por debajo de los ojos"""
+    a = a.copy()
+    sk = np.argwhere(a[:rows] == SKIN_J)
+    if not len(sk): return a
+    top = sk[:, 0].min()
+    tr = ndimage.binary_dilation(a == 0, structure=np.ones((3, 3)))
+    for y in range(top + 4, min(rows, top + 11)):
+        xs = np.nonzero(a[y] == SKIN_J)[0]
+        if len(xs) < 2: continue
+        for x in range(xs.min() + 1, xs.max()):
+            if a[y, x] == B and not tr[y, x]: a[y, x] = SKIN_J
+    return a
+
+
 def edge_mask(a):
     m = np.zeros(a.shape, bool); m[0, :] = m[-1, :] = True; m[:, 0] = m[:, -1] = True
     return m
@@ -168,8 +183,10 @@ def build(ps):
                 pass
             elif i in (0x38, 0x39):                    # Romay de espaldas: cabeza ovalada
                 j = back_head(j)
-            elif i in (0x30, 0x31, 0x32, 0x36, 0x37, 0x33, 0x34, 0x35, 0x3A, 0x3B):
+            elif i in (0x30, 0x31, 0x32, 0x36, 0x37):
                 j = shrink_hair(j)
+            elif i in (0x33, 0x34, 0x35, 0x3A, 0x3B):
+                j = debeard(j)
             _, x0, y0 = SA.trim(img); t = SA.trim(img)[0]
             clip = np.zeros_like(j); clip[y0:y0 + t.shape[0], x0:x0 + t.shape[1]] = 1
             out[slot][i] = j * clip
@@ -177,3 +194,68 @@ def build(ps):
         out['I'][hi] = head_img(hi, ps[('itu', hi)].shape)
         out['R'][ri] = head_img(hi, ps[('romay', ri)].shape)
     return out
+
+
+# ---------------------------------------------------------------------------------------------
+# Jordan con la altura de Itu en el sitio de Romay (cuando el humano juega con Itu): las piezas de
+# J_I se reparten por los rectangulos de Romay y las filas libres del atlas; la tabla del atlas
+# del juego de Romay se cambia por la de Jordan.
+INV = {v: k for k, v in PAIRS.items()}          # indice de Romay -> el de Itu
+
+
+def free_rects(tab):
+    """rectangulos de Romay + filas libres de cada zona del atlas -> [(x, y, w, h)]"""
+    rects = []
+    for (c, i), (x, y, w, h, dx, dy) in tab.items():
+        if c == 'romay': rects.append([x, y, w + (w & 1), h])
+    for ry, rh in SA.REGIONS:
+        used = [y + h for (x, y, w, h, dx, dy) in tab.values() if ry <= y < ry + rh]
+        top = max(used) if used else ry
+        if top < ry + rh: rects.append([0, top, 256, ry + rh - top])
+    return rects
+
+
+def pack_into(rects, items):
+    """guillotina: items {clave: img recortada} -> {clave: (x, y)}"""
+    free = [list(r) for r in rects]
+    pos = {}
+    for k in sorted(items, key=lambda k: (-items[k].shape[0], -items[k].shape[1])):
+        h, w = items[k].shape; w2 = w + (w & 1)
+        best = None
+        for n, (x, y, fw, fh) in enumerate(free):
+            if w2 <= fw and h <= fh:
+                waste = fw * fh - w2 * h
+                if best is None or waste < best[0]: best = (waste, n)
+        if best is None: raise ValueError('Jordan no cabe en el atlas: %r %dx%d' % (k, w, h))
+        x, y, fw, fh = free.pop(best[1])
+        pos[k] = (x, y)
+        # resto a la derecha (alto h) y debajo (ancho completo)
+        if fw - w2 > 0: free.append([x + w2, y, fw - w2, h])
+        if fh - h > 0: free.append([x, y + h, fw, fh - h])
+    return pos
+
+
+def romay_slot(J, tab):
+    """-> (piezas [(x, y, img)], entradas ATAB de 62 x 7 para el juego de Romay)"""
+    JI = J['I']
+    src = {}
+    for i in range(62):
+        k = INV.get(i, i)
+        if k in JI: src[i] = k
+    items = {}
+    trims = {}
+    for i, k in src.items():
+        t, dx, dy = SA.trim(JI[k])
+        trims[i] = (t, dx, dy)
+    uniq = {}
+    for i, k in src.items(): uniq.setdefault(k, i)
+    for k, i in uniq.items(): items[k] = trims[i][0]
+    pos = pack_into(free_rects(tab), items)
+    ent = bytearray()
+    for i in range(62):
+        if i not in src:
+            ent += bytes(7); continue
+        k = src[i]; t, dx, dy = trims[i]; x, y = pos[k]
+        ent += bytes([x, y & 255, y >> 8, t.shape[1], t.shape[0], dx, dy])
+    pieces = [(pos[k], items[k]) for k in items]
+    return pieces, bytes(ent)

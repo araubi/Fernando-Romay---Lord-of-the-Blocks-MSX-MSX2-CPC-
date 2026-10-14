@@ -905,6 +905,7 @@ LEVSTR:
   ret z
   ld de,LEYTXT
   ret
+JNAME: db 77,46,32,74,79,82,68,65,78,32
 LEYTXT: db 76,69,89,69,78,68,65,255
 ; 86A2h: dificultad de la maquina (LEYENDA = NBA)
 LEVAI:
@@ -1083,7 +1084,15 @@ JSET:
   ldir
   ld a,(SWAPPED)
   add a,JBANK
-  jr JSYNC
+  call JSYNC
+  ; tabla del atlas de Jordan (cada vez: LOADE la acaba de recargar)
+  ld a,(JATLAS)
+  cp JBANK
+  ret nz
+  ld (RBANKV),a
+  call RCALLX
+  dw 4003h
+  ret
 jz_0:
   xor a
 ; JSYNC: A = juego de piezas de Jordan que debe haber en el atlas (0, JBANK, JBANK+1)
@@ -1107,7 +1116,6 @@ JUP:
   call RCALLX
   dw 4000h
   ret
-JNAME: db 77,46,32,74,79,82,68,65,78,32
 G2MODE:
   call VWAIT
   xor a

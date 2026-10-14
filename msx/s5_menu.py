@@ -502,6 +502,7 @@ mq_sh:
   ret nc
   add a,124-3Eh
 mq_ent:
+  ld c,a
   ld l,a
   ld h,0
   ld d,h
@@ -512,6 +513,16 @@ mq_ent:
   or a
   sbc hl,de
   ld de,RATAB
+  ld a,(JATLAS)
+  cp JBANK
+  jr nz,mq_t
+  ld a,c
+  cp 62
+  jr c,mq_t
+  cp 124
+  jr nc,mq_t
+  ld de,RATABJ-62*7
+mq_t:
   add hl,de
   push hl
   pop iy
@@ -1046,9 +1057,9 @@ def tables():
     return bytes(t)
 
 
-def bank_m(L, ent, remap, pal):
+def bank_m(L, ent, remap, pal, jent):
     """banco 9: tablas (4000h-45FFh) + codigo (4600h)"""
-    src = CONSTS + f'NRL equ {NRL}\n' + SRCM + VDPR + dbs(ent, 'RATAB') + dbs(remap, 'RREMAP') + dbs(pal, 'RPALS')
+    src = CONSTS + f'NRL equ {NRL}\nJBANK equ {JBANK}\n' + SRCM + VDPR + dbs(ent, 'RATAB') + dbs(jent, 'RATABJ') + dbs(remap, 'RREMAP') + dbs(pal, 'RPALS')
     consts = {k: v for k, v in L.items()}
     code, LL, _ = assemble(src, MCODE, consts)
     b = bytearray(b'\xff' * 0x4000)
@@ -1074,6 +1085,18 @@ def bank_p(L, pal):
 # ---------------------------------------------------------------------------------------------
 # bancos 11-14: piezas de Jordan / originales escritas en los rectangulos del atlas de un personaje
 SRCJ = """
+  jp JUPL
+  jp JPAT
+JPAT:
+  ld hl,JATAB
+  ld de,JADST
+  ld bc,JALEN
+  ld a,b
+  or c
+  ret z
+  ldir
+  ret
+JUPL:
   ld hl,JRECTS
 jr_n:
   ld e,(hl)
@@ -1132,23 +1155,34 @@ jr_e:
 """
 
 
-def bank_j(tab, imgs, ch):
-    """imgs: {indice: imagen con la forma de la pieza} ; tab: atlas (clave -> x, y, w, h, dx, dy)"""
+def bank_j(items, atab=b'', adst=0):
+    """items: [((x, y), img recortada)] -> banco con el codigo de subida (4000h) y el parche de la
+    tabla del atlas (4003h: atab -> adst)"""
     data = bytearray()
+    for (x, y), sub in items:
+        h, w = sub.shape
+        wb = (w + 1) // 2
+        a = np.zeros((h, wb * 2), np.uint8); a[:, :w] = sub
+        assert x % 2 == 0 and x // 2 + wb <= 128
+        data += bytes([y & 255, y >> 8, x // 2, wb, h])
+        data += bytes(((a[:, 0::2] << 4) | a[:, 1::2]).astype(np.uint8).flatten())
+    data += bytes([0xFF, 0xFF])
+    src = (CONSTS + f"JXB equ {MVARS + 24}\nJWB equ {MVARS + 25}\nJADST equ {adst}\nJALEN equ {len(atab)}\n" + SRCJ +
+           dbs(atab, 'JATAB') + "JRECTS:\n")
+    code, LL, _ = assemble(src, 0x4000, {})
+    out = bytes(code) + bytes(data)
+    assert len(out) <= 0x4000, hex(len(out))
+    return out + b'\xff' * (0x4000 - len(out))
+
+
+def slot_items(tab, imgs, ch):
+    """piezas con la forma original colocadas en los rectangulos del personaje ch"""
+    items = []
     for (c, i), (x, y, w, h, dx, dy) in sorted(tab.items(), key=lambda kv: str(kv[0])):
         if c != ch or i not in imgs: continue
         img = imgs[i]
         sub = img[dy:dy + h, dx:dx + w]
         rest = img.copy(); rest[dy:dy + h, dx:dx + w] = 0
         assert not rest.any(), ('pieza fuera del rectangulo', ch, hex(i))
-        wb = (w + 1) // 2
-        a = np.zeros((h, wb * 2), np.uint8); a[:, :w] = sub
-        assert x % 2 == 0
-        data += bytes([y & 255, y >> 8, x // 2, wb, h])
-        data += bytes(((a[:, 0::2] << 4) | a[:, 1::2]).astype(np.uint8).flatten())
-    data += bytes([0xFF, 0xFF])
-    src = CONSTS + f"JXB equ {MVARS + 24}\nJWB equ {MVARS + 25}\n" + SRCJ + "JRECTS:\n"
-    code, LL, _ = assemble(src, 0x4000, {})
-    out = bytes(code) + bytes(data)
-    assert len(out) <= 0x4000, (ch, hex(len(out)))
-    return out + b'\xff' * (0x4000 - len(out))
+        items.append(((x, y), sub))
+    return items

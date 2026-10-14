@@ -134,10 +134,10 @@ def export_pres(outdir):
 
 
 def export_jordan(outdir, P):
-    """M. Jordan: las 4 cabezas y todas las piezas del cuerpo (version sobre las piezas de Romay)"""
+    """M. Jordan: las 4 cabezas y todas las piezas del cuerpo (con la altura de Itu)"""
     import jordan as JD
     ps = SA.all_pieces(P)
-    J = JD.build(ps)['R']
+    J = JD.build(ps)['I']
     ks = sorted(J)
     cols = 10
     cw, chh = 26, 44
@@ -146,7 +146,7 @@ def export_jordan(outdir, P):
     H = MARGIN * 2 + TITLE_H * 2 + rows * (chh * S + TITLE_H) + 130
     im = Image.new('RGB', (W, H), (40, 40, 48)); d = ImageDraw.Draw(im)
     y = MARGIN
-    d.text((MARGIN, y), 'M. JORDAN: piezas (magenta = transparente). Numero = pieza del juego. Cabezas: 0A, 16, 22, 2E', fill=(255, 255, 160))
+    d.text((MARGIN, y), 'M. JORDAN: piezas (magenta = transparente). Numero = pieza del juego. Cabezas: 0B, 17, 23, 2F (altura de Itu)', fill=(255, 255, 160))
     y += TITLE_H
     for n, k in enumerate(ks):
         x = MARGIN + (n % cols) * (cw * S + 8); yy = y + (n // cols) * (chh * S + TITLE_H)

@@ -248,20 +248,23 @@ def build(ref_cas):
         rom[bank * 0x4000:bank * 0x4000 + ln] = vram[va:va + ln]
     rom[8 * 0x4000 + 0x2000:9 * 0x4000] = vram[0x0E000:0x10000]
     pal = s5_patch.pal_bytes(SA.PAL)
-    bm, LM, nm = SM.bank_m(L, s5_patch.CUR['ent'], s5_patch.CUR['remap'], pal)
-    rom[SM.MBANK * 0x4000:(SM.MBANK + 1) * 0x4000] = bm
-    bp, LP = SM.bank_p(L, pal)
-    rom[SM.PBANK * 0x4000:(SM.PBANK + 1) * 0x4000] = bp
-    for n, a in SM.entries().items():
-        assert (LM.get(n + '_') or LP.get(n + '_')) == a + 0 or True
     import jordan
     ps = SA.all_pieces(s5_patch.CUR['P'])
     J = jordan.build(ps)
     tab = s5_patch.CUR['tab']
+    jpieces, jent = jordan.romay_slot(J, tab)
+    bm, LM, nm = SM.bank_m(L, s5_patch.CUR['ent'], s5_patch.CUR['remap'], pal, jent)
+    rom[SM.MBANK * 0x4000:(SM.MBANK + 1) * 0x4000] = bm
+    bp, LP = SM.bank_p(L, pal)
+    rom[SM.PBANK * 0x4000:(SM.PBANK + 1) * 0x4000] = bp
     orig = {ch: {i: img for (c, i), img in ps.items() if c == ch} for ch in ('romay', 'itu')}
-    for k, (ch, imgs) in enumerate((('romay', J['R']), ('itu', J['I']), ('romay', orig['romay']), ('itu', orig['itu']))):
+    banks = [SM.bank_j(jpieces, jent, L['ATAB'] + 62 * 7),            # 11: Jordan (altura de Itu) en el sitio de Romay
+             SM.bank_j(SM.slot_items(tab, J['I'], 'itu')),            # 12: Jordan en el sitio de Itu
+             SM.bank_j(SM.slot_items(tab, orig['romay'], 'romay')),   # 13: Romay original
+             SM.bank_j(SM.slot_items(tab, orig['itu'], 'itu'))]       # 14: Itu original
+    for k, bdata in enumerate(banks):
         bk = SM.JBANK + k
-        rom[bk * 0x4000:(bk + 1) * 0x4000] = SM.bank_j(tab, imgs, ch)
+        rom[bk * 0x4000:(bk + 1) * 0x4000] = bdata
     rom[15 * 0x4000 + 0x3E00:15 * 0x4000 + 0x3E00 + 3 * 64] = bytes([0x32, 0xFF, 0x77]) * 64
     return bytes(rom), L, img, bg, vram
 
