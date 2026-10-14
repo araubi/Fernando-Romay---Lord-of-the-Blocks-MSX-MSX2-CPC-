@@ -685,7 +685,7 @@ BARH:
   pop hl
   ld a,(S5ON)
   or a
-  ret z
+  jr z,bh_r
   push af
   push bc
   push de
@@ -709,6 +709,9 @@ bh_e:
   pop de
   pop bc
   pop af
+; como el original: A = patron de la celda (9F43h mira su bit 0)
+bh_r:
+  ld a,c
   ret
 BARO:
   push hl
