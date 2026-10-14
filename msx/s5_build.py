@@ -252,18 +252,23 @@ def build(ref_cas):
     ps = SA.all_pieces(s5_patch.CUR['P'])
     J = jordan.build(ps)
     tab = s5_patch.CUR['tab']
+    ent = s5_patch.CUR['ent']
     jpieces, jent = jordan.romay_slot(J, tab)
-    bm, LM, nm = SM.bank_m(L, s5_patch.CUR['ent'], s5_patch.CUR['remap'], pal, jent)
+    bm, LM, nm = SM.bank_m(L, ent, s5_patch.CUR['remap'], pal, jent)
     rom[SM.MBANK * 0x4000:(SM.MBANK + 1) * 0x4000] = bm
     bp, LP = SM.bank_p(L, pal)
     rom[SM.PBANK * 0x4000:(SM.PBANK + 1) * 0x4000] = bp
     orig = {ch: {i: img for (c, i), img in ps.items() if c == ch} for ch in ('romay', 'itu')}
-    banks = [SM.bank_j(jpieces, jent, L['ATAB'] + 62 * 7),            # 11: Jordan (altura de Itu) en el sitio de Romay
-             SM.bank_j(SM.slot_items(tab, J['I'], 'itu')),            # 12: Jordan en el sitio de Itu
-             SM.bank_j(SM.slot_items(tab, orig['romay'], 'romay')),   # 13: Romay original
-             SM.bank_j(SM.slot_items(tab, orig['itu'], 'itu'))]       # 14: Itu original
-    for k, bdata in enumerate(banks):
-        bk = SM.JBANK + k
+    full_j = ent[:62 * 7] + jent                                        # Itu normal + Jordan en el sitio de Romay
+    js_items, js_ent = jordan.state_jordan_swap(J, ps, tab, ent)
+    s_items, s_ent = jordan.state_swap(ps, tab, ent)
+    banks = {11: SM.bank_j(jpieces, full_j, L['ATAB']),                 # Jordan (altura de Itu) en el sitio de Romay
+             12: SM.bank_j(js_items, js_ent, L['ATAB']),                # Jordan en el sitio de Itu, saltos en espejo
+             13: SM.bank_j(SM.slot_items(tab, orig['romay'], 'romay')), # Romay original
+             14: SM.bank_j(SM.slot_items(tab, orig['itu'], 'itu')),     # Itu original
+             15: SM.bank_j(s_items, s_ent, L['ATAB'])}                  # Romay contra Itu: saltos en espejo
+    for bk, bdata in banks.items():
+        if bk == 15: assert bdata[0x3E00:] == b'\xff' * 0x200
         rom[bk * 0x4000:(bk + 1) * 0x4000] = bdata
     rom[15 * 0x4000 + 0x3E00:15 * 0x4000 + 0x3E00 + 3 * 64] = bytes([0x32, 0xFF, 0x77]) * 64
     return bytes(rom), L, img, bg, vram

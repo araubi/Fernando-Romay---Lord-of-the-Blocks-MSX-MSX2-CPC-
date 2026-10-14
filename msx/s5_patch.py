@@ -80,6 +80,7 @@ NMLIST   equ {SM.NMLIST}
 MBANK    equ {SM.MBANK}
 PBANK    equ {SM.PBANK}
 JBANK    equ {SM.JBANK}
+SBANK    equ 15
 """ + ''.join('%s equ %d\n' % kv for kv in SM.entries().items())
 
 # =============================================================================================
@@ -618,6 +619,36 @@ ra_3:
   ld (de),a
   ret
 
+; ---------- JSYNC: A = juego de piezas que debe haber en el atlas (0 normal, 11/12 Jordan, 15 espejo) ----------
+JSYNC:
+  ld hl,JATLAS
+  cp (hl)
+  ret z
+  push af
+  ld a,(hl)
+  or a
+  jr z,jy_1
+  ld a,JBANK+2
+  call JUP
+  ld a,JBANK+3
+  call JUP
+jy_1:
+  pop af
+  ld (JATLAS),a
+  or a
+  ret z
+  cp JBANK+1
+  jr nz,JUP
+  push af
+  ld a,SBANK
+  call JUP
+  pop af
+JUP:
+  ld (RBANKV),a
+  call RCALLX
+  dw 4000h
+  ret
+
 ; ---------- trampolines residentes hacia los bloques cargables ----------
 ZOOMT:
   ld a,(REPLAY)
@@ -1099,7 +1130,7 @@ sx_1:
   ldir
   jp ROMOFF
 
-; ---------- LEYENDA: en 1 jugador el rival es M. JORDAN ----------
+; ---------- LEYENDA: en 1 jugador el rival es M. JORDAN ; campos cambiados: saltos en espejo ----------
 JSET:
   xor a
   ld (JORDAN),a
@@ -1117,37 +1148,21 @@ JSET:
   ldir
   ld a,(SWAPPED)
   add a,JBANK
+  jr jz_s
+jz_0:
+  ld a,(SWAPPED)
+  or a
+  jr z,jz_s
+  ld a,SBANK
+jz_s:
   call JSYNC
-  ; tabla del atlas de Jordan (cada vez: LOADE la acaba de recargar)
+  ; tabla del atlas (cada vez: LOADE la acaba de recargar)
   ld a,(JATLAS)
-  cp JBANK
-  ret nz
+  or a
+  ret z
   ld (RBANKV),a
   call RCALLX
   dw 4003h
-  ret
-jz_0:
-  xor a
-; JSYNC: A = juego de piezas de Jordan que debe haber en el atlas (0, JBANK, JBANK+1)
-JSYNC:
-  ld hl,JATLAS
-  cp (hl)
-  ret z
-  push af
-  ld a,(hl)
-  or a
-  jr z,jy_1
-  add a,2
-  call JUP
-jy_1:
-  pop af
-  ld (JATLAS),a
-  or a
-  ret z
-JUP:
-  ld (RBANKV),a
-  call RCALLX
-  dw 4000h
   ret
 G2MODE:
   call VWAIT

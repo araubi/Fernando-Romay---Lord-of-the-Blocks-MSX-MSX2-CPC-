@@ -245,12 +245,16 @@ def romay_slot(J, tab):
     JI = J['I']
     src = {}
     for i in range(62):
+        if i in PAIRS: continue        # indices solo de Itu: el rival en el sitio de Romay no los pide
         k = INV.get(i, i)
         if k in JI: src[i] = k
     items = {}
     trims = {}
-    for i, k in src.items():
-        t, dx, dy = SA.trim(JI[k])
+    for i, k in list(src.items()):
+        if i in ROM_J:                 # saltos: los de Itu miran al otro lado -> en espejo
+            src[i] = ('m', k); t, dx, dy = SA.trim(mirror(JI[k]))
+        else:
+            t, dx, dy = SA.trim(JI[k])
         trims[i] = (t, dx, dy)
     uniq = {}
     for i, k in src.items(): uniq.setdefault(k, i)
@@ -264,3 +268,45 @@ def romay_slot(J, tab):
         ent += bytes([x, y & 255, y >> 8, t.shape[1], t.shape[0], dx, dy])
     pieces = [(pos[k], items[k]) for k in items]
     return pieces, bytes(ent)
+
+
+# ---------------------------------------------------------------------------------------------
+# saltos en espejo cuando los personajes cambian de campo (en el MSX1 lo hace SWAPCH con los datos)
+ITU_J = (0x33, 0x34, 0x35, 0x3A, 0x3B, 0x3C, 0x3D)
+ROM_J = (0x30, 0x31, 0x32, 0x36, 0x37, 0x38, 0x39)
+
+
+def mirror(img):
+    return img[:, ::-1].copy()
+
+
+def overrides(tab, ent, over):
+    """over: {(personaje, indice): imagen} -> (piezas [((x, y), img)], 124 entradas ATAB)
+    cada imagen va al rectangulo de esa pieza en el atlas (tiene que caber)"""
+    ent = bytearray(ent[:124 * 7])
+    items = []
+    for (ch, i), im in sorted(over.items(), key=lambda kv: str(kv[0])):
+        x, y, w, h, dx0, dy0 = tab[(ch, i)]
+        t, dx, dy = SA.trim(im)
+        assert t.shape[1] <= w + (w & 1) and t.shape[0] <= h, ('no cabe', ch, hex(i))
+        items.append(((x, y), t))
+        n = (0 if ch == 'itu' else 62) + i
+        ent[n * 7:n * 7 + 7] = bytes([x, y & 255, y >> 8, t.shape[1], t.shape[0], dx, dy])
+    return items, bytes(ent)
+
+
+def state_swap(ps, tab, ent):
+    """humano con Romay, rival Itu: saltos de los dos en espejo"""
+    over = {('itu', k): mirror(ps[('itu', k)]) for k in ITU_J}
+    over.update({('romay', k): mirror(ps[('romay', k)]) for k in ROM_J})
+    return overrides(tab, ent, over)
+
+
+def state_jordan_swap(J, ps, tab, ent):
+    """humano con Romay, rival Jordan en el sitio de Itu (saltos en espejo)"""
+    over = {('itu', k): (mirror(im) if k in ITU_J else im) for k, im in J['I'].items()}
+    rom = {('romay', k): mirror(ps[('romay', k)]) for k in ROM_J}
+    items, e = overrides(tab, ent, dict(over, **{}) | rom)
+    # las piezas de Romay en espejo ya las sube el banco 15 (se llama antes): aqui solo las de Jordan
+    items2, _ = overrides(tab, ent, over)
+    return items2, e
