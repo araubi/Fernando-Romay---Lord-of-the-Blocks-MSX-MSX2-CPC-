@@ -81,6 +81,7 @@ MBANK    equ {SM.MBANK}
 PBANK    equ {SM.PBANK}
 JBANK    equ {SM.JBANK}
 SBANK    equ 15
+MPEND    equ {SM.MVARS + 20}
 """ + ''.join('%s equ %d\n' % kv for kv in SM.entries().items())
 
 # =============================================================================================
@@ -701,7 +702,7 @@ pr_m:
   ld (CCOL),a
   call RCALLM
   dw MMARKC
-  ret
+  jp MDRAIN
 ; MIFON: NZ si el modo M esta en pantalla (solo cambia A)
 MIFON:
   ld a,(MDISP)
@@ -769,7 +770,7 @@ dh_c:
   pop af
   call RCALLM
   dw MMARKR
-  ret
+  jp MDRAIN
 dh_x:
   pop af
   ret
@@ -1013,13 +1014,14 @@ PGUP:
   ld a,40h
   out (99h),a
   ld hl,4000h
+  ld c,b
+  ld b,0
 pg_l:
   ld a,(hl)
   out (98h),a
   inc hl
-  dec bc
-  ld a,b
-  or c
+  djnz pg_l
+  dec c
   jr nz,pg_l
   ret
 ; ---------- 8538h (call 91B5h): vuelta al juego tras el descanso -> G4 ----------
@@ -1181,6 +1183,15 @@ G2MODE:
   ld hl,PALDEF
   jp SETPAL
 
+; celdas marcadas que quedan por convertir (MDIRTY convierte unas pocas por llamada)
+MDRAIN:
+  ld a,(MPEND)
+  or a
+  ret z
+  call RCALLM
+  dw MDIRTX
+  jr MDRAIN
+
 ; ---------- B1FEh fuera del partido: volcado original y, en el modo M, la vuelta en G4 ----------
 MUPL:
   ld hl,0C298h
@@ -1198,7 +1209,7 @@ mu_c:
   dw MCONVR
   ld a,(MROW)
   inc a
-  cp 24
+  cp 112
   jr c,mu_c
   call RCALLM
   dw MSTART
@@ -1210,6 +1221,8 @@ mu_w:
   jr nz,mu_w
   call RCALLM
   dw MFRAME
+  call RCALLM
+  dw MROTX
   ld a,(DRAWPG)
   inc a
   ld (FLIPREQ),a
@@ -1525,6 +1538,9 @@ wr_n:
 
 ; CHKCELL: celda CROW/CCOL; si es del marcador solo se convierte si cambio
 CHKCELL:
+  ld a,(CROW)
+  cp 15
+  ret z                ; fila 15 = linea de fondo del MSX1: la cancha ya la dibuja en y=119
   call RDCELL
   ld c,a
   ld a,(CROW)

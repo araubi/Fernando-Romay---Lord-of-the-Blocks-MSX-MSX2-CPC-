@@ -26,7 +26,7 @@ MLIST, MRL0, MRL1, MVARS = 0xBD20, 0xBD60, 0xBDE8, 0xBE70
 NMLIST, NRL = 16, 32
 # puntos de entrada fijos (tabla de saltos al principio del codigo de cada banco)
 MCODE = 0x4600
-ENT_M = ['MCONVR', 'MSTART', 'MFRAME', 'MMARKC', 'MMARKR', 'MDIGPB']
+ENT_M = ['MCONVR', 'MSTART', 'MFRAME', 'MMARKC', 'MMARKR', 'MDIGPB', 'MROTX', 'MDIRTX']
 ENT_P = ['PSTART', 'PFRAME', 'PSHOW']
 
 
@@ -65,6 +65,8 @@ MC0   equ {MVARS + 16}
 MC1   equ {MVARS + 17}
 MDR   equ {MVARS + 18}
 CVPB  equ {MVARS + 19}
+MPEND equ {MVARS + 20}
+MBUD  equ {MVARS + 21}
 SWAPPED equ 8231h
 PBUF  equ 8240h
 MT0   equ 4000h
@@ -134,28 +136,43 @@ SRCM = """
   jp MMARKC_
   jp MMARKR_
   jp MDIGPB_
+  jp MROTX_
+  jp MDIRTY
 
 ; ---------- fila MROW entera -> pagina 2, sumas y marcas a cero ----------
 MCONVR_:
+  ; MROW = 0..95: un cuarto de fila (8 celdas) por llamada, para no tener la interrupcion parada mas de un fotograma;
+  ; 96..111: ya en G4 (pagina 2 a la vista), franjas de 12 lineas de la pagina 2 a las paginas 0 y 1
   ld a,(MROW)
+  cp 96
+  jr nc,MCOPY
+  ld c,a
+  srl a
+  srl a
   ld d,a
   ld (CVR),a
-  ld e,0
-  ld b,32
-  call RDCELLS
-  xor a
+  ld a,c
+  and 3
+  add a,a
+  add a,a
+  add a,a
+  ld e,a
   ld (CVC),a
-  ld a,32
+  ld b,8
+  call RDCELLS
+  ld a,8
   ld (CVN),a
   ld a,(CVR)
   call CKROWP
-  ld b,32
+  call CVCOFS
+  ld b,8
   call CKRUN
   call SBDIG
   call CONV
   ld a,(CVR)
   call DIRTROW
-  ld b,32
+  call CVCOFS
+  ld b,8
 mc_z:
   ld (hl),0
   inc hl
@@ -165,19 +182,52 @@ mc_z:
   ld h,MROWD/256
   ld (hl),0
   ret
-
-; ---------- pasar a G4: mostrar la pagina 2 y copiarla a la 0 y la 1 ----------
-MSTART_:
+MCOPY:
+  sub 96
+  jr nz,mcp_1
   ld a,5Fh
   call G4MODE
-  ld hl,FULLC
-  call RCMDLD
+  xor a
+mcp_1:
+  ld c,a
+  add a,a
+  add a,c
+  add a,a
+  add a,a
+  ld (CMDB+2),a
+  ld (CMDB+6),a
+  ld a,2
+  ld (CMDB+3),a
+  xor a
+  ld (CMDB+0),a
+  ld (CMDB+1),a
+  ld (CMDB+4),a
+  ld (CMDB+5),a
+  ld (CMDB+7),a
+  ld (CMDB+8),a
+  ld (CMDB+11),a
+  ld (CMDB+13),a
+  inc a
+  ld (CMDB+9),a
+  ld a,12
+  ld (CMDB+10),a
   ld a,0D0h
   call RVCMD
   ld a,1
   ld (CMDB+7),a
   ld a,0D0h
-  call RVCMD
+  jp RVCMD
+CVCOFS:
+  ld a,(CVC)
+  ld e,a
+  ld d,0
+  add hl,de
+  ret
+
+; ---------- pasar a G4: mostrar la pagina 2 y copiarla a la 0 y la 1 ----------
+MSTART_:
+  ld a,5Fh
+  call G4MODE
   call RVWAIT
   xor a
   ld (DRAWPG),a
@@ -202,32 +252,49 @@ MFRAME_:
   add a,a
   add a,a
   ld (YOFF),a
-  call MROTCHK
   call MDIRTY
   call MREST
-  call MPIECES
+  jp MPIECES
+; aparte (otra llamada, con la interrupcion libre entre las dos): comprobacion rotativa mientras el VDP
+; acaba las ordenes; lo que encuentre se convierte en la siguiente vuelta
+MROTX_:
+  call MROTCHK
   jp RVWAIT
 
 ; comprobacion rotativa: una fila por vuelta
 MROTCHK:
+  ; media fila por vuelta (MROT = 0..47)
   ld a,(MROT)
-  cp 24
+  cp 48
   jr c,mr_1
   xor a
 mr_1:
-  ld d,a
-  ld (CVR),a
+  ld c,a
   inc a
-  cp 24
+  cp 48
   jr c,mr_2
   xor a
 mr_2:
   ld (MROT),a
-  ld e,0
-  ld b,32
+  ld a,c
+  srl a
+  ld d,a
+  ld (CVR),a
+  ld a,c
+  and 1
+  add a,a
+  add a,a
+  add a,a
+  add a,a
+  ld e,a
+  push de
+  ld b,16
   call RDCELLS
   ld a,(CVR)
   call CKROWP
+  pop de
+  ld d,0
+  add hl,de
   ld e,0
 mr_l:
   push hl
@@ -247,14 +314,17 @@ mr_l:
 mr_ok:
   inc hl
   ld a,e
-  or a
+  cp 128
   jr nz,mr_l
   ret
 
 ; celdas marcadas: tramos seguidos de cada fila
 MDIRTY:
+  ; como mucho ~12-23 celdas por llamada (MPEND = 1 si queda trabajo): la interrupcion no se pierde
   xor a
   ld (MDR),a
+  ld (MPEND),a
+  ld (MBUD),a
 md_r:
   ld a,(MDR)
   ld l,a
@@ -287,6 +357,12 @@ md_e:
   ld a,b
   cp 32
   jr nc,md_go
+  ld a,(CVC)
+  ld c,a
+  ld a,b
+  sub c
+  cp 12
+  jr nc,md_go
   ld a,(hl)
   or a
   jr nz,md_e
@@ -301,6 +377,13 @@ md_go:
   call RUNCONV
   pop hl
   pop bc
+  ld a,(CVN)
+  ld c,a
+  ld a,(MBUD)
+  add a,c
+  ld (MBUD),a
+  cp 12
+  jr nc,md_stop
   ld a,b
   cp 32
   jr c,md_c
@@ -310,6 +393,14 @@ md_nx:
   ld (MDR),a
   cp 24
   jr c,md_r
+  ret
+md_stop:
+  ld a,(MDR)
+  ld l,a
+  ld h,MROWD/256
+  ld (hl),1
+  ld a,1
+  ld (MPEND),a
   ret
 
 ; RUNCONV: tramo (CVR, CVC, CVN) -> pagina 2, sumas, rectangulo en las dos paginas
@@ -332,11 +423,43 @@ RUNCONV:
   call CKRUN
   call SBDIG
   call CONV
-  ; las mismas celdas en las paginas 0 y 1 (las piezas que las pisen se restauran luego)
-  xor a
-  call CONVP
+  ; las mismas celdas en las paginas 0 y 1 con el VDP (las piezas que las pisen se restauran luego)
+  ld a,(CVC)
+  add a,a
+  add a,a
+  add a,a
+  ld (CMDB+0),a
+  ld (CMDB+4),a
+  ld a,(CVR)
+  add a,a
+  add a,a
+  add a,a
+  ld (CMDB+2),a
+  ld (CMDB+6),a
+  ld a,(CVN)
+  add a,a
+  add a,a
+  add a,a
+  ld (CMDB+8),a
+  ld a,0
+  adc a,a
+  ld (CMDB+9),a
   ld a,2
-  jp CONVP
+  ld (CMDB+3),a
+  xor a
+  ld (CMDB+1),a
+  ld (CMDB+5),a
+  ld (CMDB+7),a
+  ld (CMDB+11),a
+  ld (CMDB+13),a
+  ld a,8
+  ld (CMDB+10),a
+  ld a,0D0h
+  call RVCMD
+  ld a,1
+  ld (CMDB+7),a
+  ld a,0D0h
+  jp RVCMD
 
 ; RADD: A = pagina; rectangulo (RX, RY, RW2 = ancho/2, RH)
 RADD:

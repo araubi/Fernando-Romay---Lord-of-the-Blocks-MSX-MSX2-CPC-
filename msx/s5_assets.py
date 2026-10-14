@@ -270,4 +270,5 @@ def sb_prerender():
                 fg, bg = lut[C[l] >> 4], lut[C[l] & 15]
                 for k in range(8):
                     img[r * 8 + l, c * 8 + k] = fg if P[l] & (0x80 >> k) else bg
+    img[0:8] = 1                # fila 15: la linea de fondo del MSX1 (la cancha ya la tiene en y=119)
     return img, bytes(ck)
