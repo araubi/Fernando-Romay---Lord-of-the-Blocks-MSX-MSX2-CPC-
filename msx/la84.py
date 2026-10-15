@@ -38,13 +38,18 @@ def draw(c):
     lx0 = CX - W // 2
     # estrellas: una fila por franja, separadas por una fila de parquet
     y0 = 19
+    st = np.zeros((2 * len(stripes), W), bool)
     for k, (a, b) in enumerate(stripes):
         row = p[a:b + 1].mean(0)               # cobertura media de la franja
-        y = y0 + 2 * k
         for x in range(W):
             u0 = ox0 + x / s; u1 = ox0 + (x + 1) / s
             if row[int(u0):max(int(u0) + 1, int(u1))].mean() >= 0.5:
-                c[y, lx0 + x] = WHITE
+                st[2 * k, x] = True
+    # las estrellas, centradas de verdad en la linea central (lo dibujado no es simetrico en el logo)
+    xs = np.nonzero(st.any(0))[0]
+    sx = int(round(CX + 0.5 - (lx0 + (xs.min() + xs.max() + 1) / 2)))
+    for y, x in zip(*np.nonzero(st)):
+        c[y0 + y, lx0 + x + sx] = WHITE
     # aros: elipses (perspectiva de la cancha), centros del logo oficial
     ry_k = 0.62
     top_c = [(203, 417), (333, 417), (462, 417)]
