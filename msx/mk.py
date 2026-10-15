@@ -1,6 +1,6 @@
 import build_cas as B, importlib
 from common import cas_blocks
-mods=['menu_patch','names_patch','swap_patch','beard_patch','dunk_patch','romay_patch','jump_fix','court_patch','court_shadow','board_patch','controls_patch','user_fix2','user_fix3','user_fix4','stats_patch','shot_patch','sprite_patch','charsel_patch','fixes_patch']
+mods=['menu_patch','names_patch','swap_patch','beard_patch','dunk_patch','romay_patch','jump_fix','court_patch','court_shadow','board_patch','court_msx2','controls_patch','user_fix2','user_fix3','user_fix4','stats_patch','shot_patch','sprite_patch','charsel_patch','fixes_patch']
 def make(skip=()):
     use=[n for n in mods if n not in skip]
     B.EXTRA=[importlib.import_module(n).apply for n in use]
