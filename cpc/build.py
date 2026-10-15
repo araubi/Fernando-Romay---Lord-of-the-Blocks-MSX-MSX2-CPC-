@@ -108,6 +108,7 @@ FREE = [      # (desde, hasta) huecos de RAM libres dentro de CB.BIN (verificado
     (0x86EE, 0x8AA8),     # bufer de ceros sin referencias
     (0x7F08, 0x80E7),     # glifos 61h-7Fh (minusculas, sin uso) + restos de un cargador (8000h-80E6h)
     (0x255A, 0x2648),     # copia muerta de la rutina de zoom (sin referencias) + ceros
+    (0x1035, 0x1080),     # restos de codigo repetidos tras la cadena 'TIME' (sin referencias)
 ]
 
 MODS = ['p_names', 'p_stats', 'p_controls', 'p_heads', 'p_jumps', 'p_lcd', 'p_charsel', 'p_bg', 'p_menu', 'p_jordan', 'p_intro', 'p_raster']

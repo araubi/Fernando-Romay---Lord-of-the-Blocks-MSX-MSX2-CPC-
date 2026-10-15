@@ -7,14 +7,58 @@
 import pickle
 from p_heads import pack
 HEADS = pickle.load(open('/home/claude/cpc/jordan_heads.pkl', 'rb'))
-EVEN = {0x0B: 0x0A, 0x17: 0x16, 0x23: 0x22, 0x2F: 0x2E}
 COL = {'#': 1, 's': 1, 'w': 2, '.': 0, 'r': 1, 'k': 1}
-def head_data(i):
-    x0, y0, rows = HEADS[i]
-    g = [[0] * 16 for _ in range(16)]
-    for y, r in enumerate(rows):
-        for x, ch in enumerate(r):
-            if ch != '.': g[y0 + y][x0 - 4 + x] = COL[ch]
+# cabezas de Jordan con la silueta de las de Itu (asi encajan con el cuerpo); piel oscura y
+# detalles en blanco (ojos y boca) para que se vea hacia donde mira
+JL = [
+"................", "................", "................",
+"....#######.....",
+"...########.....",
+"...#########....",
+"...#########....",
+"...#w#######....",
+"..##########....",
+"...#########....",
+"...ww#######....",
+"....#######.....",
+"....#######.....",
+".....#####......",
+".....####.......",
+"......##........"]
+JF = [
+"................", "................", "................",
+".....######.....",
+"....########....",
+"....########....",
+"....########....",
+"...##w####w##...",
+"...##########...",
+"...##########...",
+"...####ww####...",
+"....########....",
+"....########....",
+"....########....",
+".....######.....",
+"......####......"]
+JB = [
+"................", "................", "................",
+".....######.....",
+"....########....",
+"....########....",
+"....########....",
+"...##########...",
+"...##########...",
+"...##########...",
+"...##########...",
+"....########....",
+"....########....",
+".....######.....",
+".....######.....",
+"................"]
+JHEADS = {0x0A: JL, 0x16: [r[::-1] for r in JL], 0x22: JF, 0x2E: JB}
+EVEN = JHEADS
+def head_data(e, mirror=None):
+    g = [[{'#': 1, 'w': 2, '.': 0}[ch] for ch in r] for r in JHEADS[e]]
     return bytes([16, 4]) + pack(g)
 RST = [0x4F, 0x0F, 0x0F, 0x0F, 0x0F, 0xE6, 0x0F, 0x2F, 0xA1, 0x4F, 0xC9]   # en 0028h
 SRC = """
@@ -239,8 +283,8 @@ LEYTXT: db 'LEYENDA',0FFh
 def apply(im):
     from p_charsel import asm_str
     LH = {}
-    for i, e in EVEN.items():
-        L = im.place('jhead%02X' % e, 'JH%02X:\n db %s' % (e, ','.join(str(b) for b in head_data(i))))
+    for e in EVEN:
+        L = im.place('jhead%02X' % e, 'JH%02X:\n db %s' % (e, ','.join(str(b) for b in head_data(e))))
         LH[e] = L['JH%02X' % e] - 0x32C8
     src = SRC.replace('{JHT}', ','.join(str(LH[e]) for e in (0x0A, 0x16, 0x22, 0x2E))).replace(
         '{RST}', ','.join(str(b) for b in RST))

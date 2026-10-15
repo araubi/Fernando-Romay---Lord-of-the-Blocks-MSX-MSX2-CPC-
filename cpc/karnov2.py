@@ -1,19 +1,19 @@
 """Karnov (forzudo calvo, con bigote y sin camiseta) en la grada, en el publico normal y en el animado."""
 import numpy as np
-STATIC = [
+STATIC = [   # "el hombre sin cuello": la cabeza va directamente sobre los hombros
 "......######......",
 ".....#pppppp#.....",
 "....#pppppppp#....",
 "....#p##pp##p#....",
 "....#pppppppp#....",
 "....#p######p#....",
-".....#pp##pp#.....",
-"......#pppp#......",
-"..#####pppp#####..",
-".#pppppppppppppp#.",
+"..###p#pppp#p###..",
+".#ppppp####ppppp#.",
+"#pppppppppppppppp#",
 "#pppp##pppp##pppp#",
 "#pppppppppppppppp#",
 "#ppppppp##ppppppp#",
+"#pppppppppppppppp#",
 "#pppppppppppppppp#",
 "#pppppppppppppppp#",
 ]
@@ -25,12 +25,12 @@ CHEER = [
 "#p#.#pppppppp#.#p#",
 "#pp##p######p##pp#",
 ".#pp#p#wwww#p#pp#.",
-"..#pp#p####p#pp#..",
-"...#pp#pppp#pp#...",
-"...#pppppppppp#...",
+"..#ppp#p##p#ppp#..",
+"..#pppp####pppp#..",
+"..#pppppppppppp#..",
 "..#pppp#pp#pppp#..",
 "..#pppppppppppp#..",
-"..#pppppp#ppppp#..",
+".#pppppp#ppppppp#.",
 ".#pppppppppppppp#.",
 ".#pppppppppppppp#.",
 ]

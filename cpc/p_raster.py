@@ -3,6 +3,7 @@ Arriba (publico y valla) azul, la pista color parque (naranja) y el marcador otr
 Se usan las interrupciones del gate array (cada 52 lineas): con R7=29 (la imagen baja 8 lineas
 respecto al VSYNC) caen en y=78 (en la franja de cuadros, antes de la pista que empieza en y=80) y en
 y=130 (entre la pista, que acaba en y=127, y el marcador, que empieza en y=136).
+En la repeticion ampliada (MATCH=2) la pista empieza en y=112: se espera desde y=78 hasta ~y=104.
 El manejador de interrupcion del juego (7511h) cuenta las interrupciones desde el VSYNC."""
 COURT = 0x0E | 0x40      # naranja
 TOP = 0x15 | 0x40        # azul brillante (el del juego)
@@ -35,12 +36,19 @@ ra_n:
   jp z,7533h
   ld a,c
   cp 3
-  ld a,{COURT}
-  jr z,ra_s
-  ld a,c
+  jr z,ra_c
   cp 4
   jp nz,7533h
+  ld a,(MATCH)
+  cp 2
+  jp z,7533h
   ld a,{TOP}
+  jr ra_s
+ra_c:
+  ld a,(MATCH)
+  cp 2
+  call z,ZWAIT
+  ld a,{COURT}
 ra_s:
   ld bc,7F00h
   out (c),c
@@ -73,7 +81,20 @@ BLACKH:
   ret
 ZOOMH:
   call MOFF
+  ld a,2
+  ld (MATCH),a
   ld hl,6792h
+  ret
+@@SPLIT@@
+; repeticion ampliada: la pista empieza en y=112 (franja de cuadros y=98-111); la interrupcion
+; llega en y=78: se esperan unas 26 lineas
+ZWAIT:
+  ld bc,238
+zw_1:
+  dec bc
+  ld a,b
+  or c
+  jr nz,zw_1
   ret
 MATCH: db 0
 RCNT: db 0
