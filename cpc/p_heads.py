@@ -25,6 +25,9 @@ def head_rows(i, src=None):
     return out
 def entry(im, i):
     p = im.rd(0x66F4 + 2 * i, 2); return 0x32C8 + (p[0] | p[1] << 8)
+# Desplazamiento de las cabezas (unidades de 2 px) como en el CPC original respecto al MSX:
+# todas +2, salvo las de frente (22h/23h) +1, y en la segunda ruta (147Ch) tambien las de perfil
+# hacia la derecha (16h/17h) +1.
 CODE = """
   org 1345h
   ld a,0Ah
@@ -33,7 +36,8 @@ CODE = """
   ld a,22h
   bit 1,(ix-1)
   jr z,hd_add
-  jr hd_done
+  inc h
+  jp 1371h
 hd_1:
   bit 3,(ix-1)
   jr z,hd_done
@@ -51,17 +55,32 @@ CODE2 = """
   jr z,h2_1
   bit 3,(ix-1)
   jr z,h2_3
-  jr h2_2
+  add a,0Ch
+  jr h2_one
 h2_1:
   add a,18h
   bit 1,(ix-1)
-  jr nz,h2_3
-h2_2:
+  jr nz,h2_one
   add a,0Ch
 h2_3:
   inc h
+h2_one:
   inc h
   jp 14A8h
+"""
+# 13FAh (la cabeza se gira hacia el rival): como en el MSX, sin los ajustes de x del CPC (que
+# compensaban el desplazamiento de los datos antiguos). Si pasa de frente (+1) a perfil (+2), +1.
+CODE3 = """
+  org 142Dh
+  bit 2,(ix-1)
+  ret nz
+  bit 1,(ix-1)
+  jr z,145Dh
+  inc h
+  bit 0,(ix+1)
+  ret z
+  dec l
+  ret
 """
 def apply(im):
     from asm import assemble
@@ -83,3 +102,6 @@ def apply(im):
     code, _, _ = assemble(CODE2, 0)
     assert 0x147C + len(code) <= 0x14A8
     im.poke(0x147C, code, [0x3E, 0x0A])
+    code, _, _ = assemble(CODE3, 0)
+    assert 0x142D + len(code) <= 0x145D
+    im.poke(0x142D, code, [0xDD, 0xCB, 0xFF, 0x56])
