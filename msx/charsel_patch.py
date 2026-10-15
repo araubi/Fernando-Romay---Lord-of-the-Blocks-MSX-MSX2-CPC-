@@ -254,7 +254,17 @@ INIT_ADDR = 0
 MENUX_ADDR = 0
 def place():
     extra = ('  call %d' % MENUX_ADDR) if MSX2 else ''
-    return [R_MIR + R_MCPY, R_SEL + R_MENU.replace('{MENU_EXTRA}', extra) + R_SWAP]
+    out = [R_MIR + R_MCPY, R_SEL + R_MENU.replace('{MENU_EXTRA}', extra) + R_SWAP]
+    if not MSX2:
+        import sprite_patch
+        out.append(sprite_patch.ZW4_SRC)
+    return out
+
+
+def frags():
+    if MSX2: return FRAGS
+    import sprite_patch
+    return FRAGS + [(sprite_patch.ZW4, sprite_patch.ZW4 + 0x40)]
 
 
 def asm_str(src):
@@ -266,7 +276,7 @@ def asm_str(src):
 
 def build(place_=None):
     place_ = place_ or place()
-    blocks = list(zip(FRAGS, place_))
+    blocks = list(zip(frags(), place_))
     names = [set(re.findall(r'^([A-Za-z_][A-Za-z_0-9]*):', s, re.M)) for _, s in blocks]
     labs = [{n: 0 for n in ns} for ns in names]
     for _ in range(6):
@@ -279,7 +289,7 @@ def build(place_=None):
             out.append(code); new.append({n: v for n, v in L.items() if n in names[k]})
         if new == labs: break
         labs = new
-    for (org, lim), code in zip(FRAGS, out):
+    for (org, lim), code in zip(frags(), out):
         assert org + len(code) <= lim, ('hueco lleno', hex(org), len(code), lim - org)
     L = {}
     for l in labs: L.update(l)
@@ -291,7 +301,7 @@ def init_code(chunks):
     se desengancha y salta a A0A1h"""
     src = ""
     off = 0x40
-    for (org, lim), code in zip(FRAGS, chunks):
+    for (org, lim), code in zip(frags(), chunks):
         src += f"  ld hl,{STAGE + off}\n  ld de,{org}\n  ld bc,{len(code)}\n  ldir\n"
         off += len(code)
     src += f"""

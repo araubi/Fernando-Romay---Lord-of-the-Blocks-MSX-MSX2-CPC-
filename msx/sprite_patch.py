@@ -21,6 +21,31 @@ ORG, LIMIT = 0xE334, 0xE740
 ORG2, LIMIT2 = 0xDC18, 0xDE44      # incluye glifos 60h-7Fh de la fuente (no se usan; el cursor "_" 5Fh se conserva)
 PLANE0, PLANE1 = 0x8000, 0x8100
 SATBUF = 0x8200
+ZW4 = 0x81C0                             # tras los dos planos (8000h-81BFh): lo copia el arranque de charsel
+ZW4_SRC = """
+; ---------- repeticion: escribir la entrada C/4 de la tabla de sprites (4 bytes en HL) ----------
+ZW4:
+  di
+  ld a,c
+  out (99h),a
+  ld a,5Bh
+  out (99h),a
+  ei
+  push hl
+  ld a,(hl)
+  out (98h),a
+  inc hl
+  ld a,(hl)
+  out (98h),a
+  inc hl
+  ld a,(hl)
+  out (98h),a
+  inc hl
+  ld a,(hl)
+  out (98h),a
+  pop hl
+  ret
+"""
 DMAP = 0x8300
 ROWF = DMAP + 448
 NBLK = 3                                 # bloques de 16 filas por jugador
@@ -85,7 +110,7 @@ SPRINIT:
 nc_clr:
   ld hl,{PLANE0}
   ld de,{PLANE0 + 1}
-  ld bc,1FFh
+  ld bc,1BFh
   ld (hl),0
   ldir
   ld a,1
@@ -682,44 +707,39 @@ pa_nx:
   cp 14
   jr nz,pa_row
   ret
-; ---------- repeticion: los sprites ampliados se ponen cuando la ampliacion llega a la mitad del jugador ----------
-ZTRIG:   db 0FFh
-ZTRG:
-  ld hl,SATBUF
-  ld b,12
-zt_l:
-  ld a,(hl)
-  cp 0C0h
-  jr nz,zt_f
-  inc hl
-  inc hl
-  inc hl
-  inc hl
-  djnz zt_l
-  jp SATOUT
-zt_f:
-  cp 0E0h
-  jr c,zt_p
-  xor a
-zt_p:
-  add a,48
-  cp 0BEh
-  jr c,zt_s
-  ld a,0BEh
-zt_s:
-  and 0FEh
-  ld (ZTRIG),a
-  ret
+; ---------- repeticion: cada sprite ampliado pasa a su sitio nuevo cuando la ampliacion llega a la
+; mitad de su franja (los patrones nuevos estan en el otro banco: los viejos siguen bien hasta entonces) ----------
 ZROW:
   inc h
   inc h
-  ld a,(ZTRIG)
-  cp h
-  jr nz,zr_1
   push hl
-  call SATOUT
+  push bc
+  ld b,h
+  ld hl,SATBUF
+  ld c,0
+zr_l:
+  ld a,(hl)
+  add a,17
+  and 0FEh
+  cp 0BEh
+  jr c,zr_t
+  ld a,0BEh
+zr_t:
+  cp b
+  jr nz,zr_n
+  call {ZW4}
+zr_n:
+  inc hl
+  inc hl
+  inc hl
+  inc hl
+  ld a,c
+  add a,4
+  ld c,a
+  cp 48
+  jr nz,zr_l
+  pop bc
   pop hl
-zr_1:
   ld a,h
   cp 0C0h
   ret
@@ -775,7 +795,7 @@ zs_l:
   inc hl
   inc hl
   djnz zs_l
-  jp ZTRG
+  ret
 zs_h1:
   dec hl
 zs_h:
@@ -785,7 +805,7 @@ zs_h:
   inc hl
   inc hl
   djnz zs_l
-  jp ZTRG
+  ret
 
 """
 
@@ -1178,7 +1198,7 @@ def apply(F1, F2, F3):
     patch3(F3, 0xA521, [0x11, 0x98, 0xC2], [0xCD] + w(L['CROWD']))
     patch3(F3, 0xA8F4, [0xFD, 0x21, 0x98, 0xC3], [0xC3] + w(L['ZOOMS']) + [0x00])
     patch3(F3, 0xA933, [0xE1, 0x24, 0x24, 0x7C, 0xFE, 0xC0, 0x38, 0xC5], [0xE1, 0xCD] + w(L['ZROW']) + [0x38, 0xC7, 0x00, 0x00])
-    consts = ''.join('%s equ %d\n' % (k, L[k]) for k in ('ACTIVE', 'SPRPREP', 'SATOUT', 'ZTRG'))
+    consts = ''.join('%s equ %d\n' % (k, L[k]) for k in ('ACTIVE', 'SPRPREP', 'SATOUT'))
     zc, _, _ = assemble(consts + 'SATBUF equ %d\n' % SATBUF + ZSRC, ZSPR)
     assert ZSPR + len(zc) <= ZLIM, hex(ZSPR + len(zc))
     o = ZSPR - 0xB3B0
