@@ -21,31 +21,6 @@ ORG, LIMIT = 0xE334, 0xE740
 ORG2, LIMIT2 = 0xDC18, 0xDE44      # incluye glifos 60h-7Fh de la fuente (no se usan; el cursor "_" 5Fh se conserva)
 PLANE0, PLANE1 = 0x8000, 0x8100
 SATBUF = 0x8200
-ZW4 = 0x81C0                             # tras los dos planos (8000h-81BFh): lo copia el arranque de charsel
-ZW4_SRC = """
-; ---------- repeticion: escribir la entrada C/4 de la tabla de sprites (4 bytes en HL) ----------
-ZW4:
-  di
-  ld a,c
-  out (99h),a
-  ld a,5Bh
-  out (99h),a
-  ei
-  push hl
-  ld a,(hl)
-  out (98h),a
-  inc hl
-  ld a,(hl)
-  out (98h),a
-  inc hl
-  ld a,(hl)
-  out (98h),a
-  inc hl
-  ld a,(hl)
-  out (98h),a
-  pop hl
-  ret
-"""
 DMAP = 0x8300
 ROWF = DMAP + 448
 NBLK = 3                                 # bloques de 16 filas por jugador
@@ -91,10 +66,17 @@ IDXH:
 NEWCOPY:
   xor a
   ld (SYNC),a
-  ld a,(0D1C5h)
-  rrca
-  call nc,HIDE
+  call HIDE
   call SPRINIT
+  ld hl,0B498h
+  jp 0B1F5h
+
+; ---------- repeticion (A887h y A89Eh, call B1F2h): sin sprites ni seguimiento de siluetas ----------
+REPCOPY:
+  xor a
+  ld (SYNC),a
+  ld (ACTIVE),a
+  call HIDE
   ld hl,0B498h
   jp 0B1F5h
 
@@ -110,7 +92,7 @@ SPRINIT:
 nc_clr:
   ld hl,{PLANE0}
   ld de,{PLANE0 + 1}
-  ld bc,1BFh
+  ld bc,1FFh
   ld (hl),0
   ldir
   ld a,1
@@ -146,7 +128,6 @@ SPRPREP:
   ld (ACTIVE),a
   ld (RW_LEFT),a
   ld a,(0D1C5h)
-  and 0FEh
   or 2
   ld (0D1C5h),a
   di
@@ -707,106 +688,6 @@ pa_nx:
   cp 14
   jr nz,pa_row
   ret
-; ---------- repeticion: cada sprite ampliado pasa a su sitio nuevo cuando la ampliacion llega a la
-; mitad de su franja (los patrones nuevos estan en el otro banco: los viejos siguen bien hasta entonces) ----------
-ZROW:
-  inc h
-  inc h
-  push hl
-  push bc
-  ld b,h
-  ld hl,SATBUF
-  ld c,0
-zr_l:
-  ld a,(hl)
-  add a,17
-  and 0FEh
-  cp 0BEh
-  jr c,zr_t
-  ld a,0BEh
-zr_t:
-  cp b
-  jr nz,zr_n
-  call {ZW4}
-zr_n:
-  inc hl
-  inc hl
-  inc hl
-  inc hl
-  ld a,c
-  add a,4
-  ld c,a
-  cp 48
-  jr nz,zr_l
-  pop bc
-  pop hl
-  ld a,h
-  cp 0C0h
-  ret
-
-"""
-
-ZSPR = 0xD9C3          # restos sin uso entre el codigo y la fuente (fichero 1, D9B8h-DA17h)
-ZLIM = 0xDA18
-ZSRC = f"""
-; ---------- A8F4h: ampliacion x2 de la repeticion + relleno blanco con sprites ampliados (MAG) ----------
-ZSPR:
-  ld a,(ACTIVE)
-  or a
-  ret z
-  call SPRPREP
-  ld a,(0D1C5h)
-  inc a
-  ld (0D1C5h),a
-  di
-  out (99h),a
-  ld a,81h
-  out (99h),a
-  ei
-  ld a,(0A8F9h)
-  add a,a
-  add a,a
-  add a,a
-  ld c,a
-  ld hl,SATBUF
-  ld b,12
-zs_l:
-  ld a,(hl)
-  cp 112
-  jr nc,zs_h
-  add a,a
-  sub 31
-  ld (hl),a
-  inc hl
-  ld a,(hl)
-  inc hl
-  inc hl
-  bit 7,(hl)
-  dec hl
-  dec hl
-  jr nz,zs_h1
-  sub c
-  jr c,zs_h1
-  cp 128
-  jr nc,zs_h1
-  add a,a
-  ld (hl),a
-  inc hl
-  inc hl
-  inc hl
-  djnz zs_l
-  ret
-zs_h1:
-  dec hl
-zs_h:
-  ld (hl),0C0h
-  inc hl
-  inc hl
-  inc hl
-  inc hl
-  djnz zs_l
-  ret
-
 """
 
 SRC2 = f"""
@@ -1151,11 +1032,6 @@ mk_m:
 mk_end:
   ld a,(0B1DFh)
   ret
-ZOOMS:
-  call {ZSPR}
-  ld iy,0C398h
-  jp 0A8F8h
-
 """
 
 
@@ -1196,14 +1072,8 @@ def apply(F1, F2, F3):
     patch3(F3, 0x8554, [0xCD, 0xF2, 0xB1], [0xCD] + w(L['MCOPY']))
     patch3(F3, 0x8587, [0xCD, 0xFE, 0xB1], [0xCD] + w(L['MUPL']))
     patch3(F3, 0xA521, [0x11, 0x98, 0xC2], [0xCD] + w(L['CROWD']))
-    patch3(F3, 0xA8F4, [0xFD, 0x21, 0x98, 0xC3], [0xC3] + w(L['ZOOMS']) + [0x00])
-    patch3(F3, 0xA933, [0xE1, 0x24, 0x24, 0x7C, 0xFE, 0xC0, 0x38, 0xC5], [0xE1, 0xCD] + w(L['ZROW']) + [0x38, 0xC7, 0x00, 0x00])
-    consts = ''.join('%s equ %d\n' % (k, L[k]) for k in ('ACTIVE', 'SPRPREP', 'SATOUT'))
-    zc, _, _ = assemble(consts + 'SATBUF equ %d\n' % SATBUF + ZSRC, ZSPR)
-    assert ZSPR + len(zc) <= ZLIM, hex(ZSPR + len(zc))
-    o = ZSPR - 0xB3B0
-    assert all(b in (0x04, 0x4A, 0x14, 0x94, 0x06, 0x4E, 0x07, 0x96, 0x36, 0x37, 0x3E, 0xCA, 0x00, 0x98, 0x42, 0x11, 0x7B, 0x10, 0x6B, 0x90) for b in F1[o:o + len(zc)])
-    F1[o:o + len(zc)] = zc
+    for at in (0xA887, 0xA89E):
+        patch3(F3, at, [0xCD, 0xF2, 0xB1], [0xCD] + w(L['REPCOPY']))
     (ca, cb), _, _ = build()
     head = cb[:0xDD19 - ORG2]                 # parte del bloque 2 dentro del fichero 1 (glifos sin uso)
     o = ORG2 - 0xB3B0; F1[o:o + len(head)] = head
