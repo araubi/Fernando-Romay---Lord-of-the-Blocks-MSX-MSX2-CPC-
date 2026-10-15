@@ -19,18 +19,34 @@ def bits_from(c):
     sub = c[Y0 - 56:]                                  # filas 72-119
     h, w = sub.shape
     green = sub == 6
-    # lineas de fondo de la cancha (diagonales): recta ajustada a los puntos blancos de cada lado
-    ys, xs = np.nonzero(sub == 15)
-    L = np.polyfit(ys[xs < 32], xs[xs < 32], 1)
-    R = np.polyfit(ys[xs > 223], xs[xs > 223], 1)
+    # lineas de fondo (diagonales): el primer / ultimo pixel que no es verde de cada fila, recta ajustada
+    # quitando los puntos que se apartan (los tramos de las zonas pegadas al fondo)
+    def edge(first):
+        ys, xs = [], []
+        for y in range(1, h - 1):
+            nz = np.nonzero(~green[y])[0]
+            if len(nz): ys.append(y); xs.append(nz.min() if first else nz.max())
+        ys, xs = np.array(ys), np.array(xs)
+        k = (xs < 40) if first else (xs > 215)
+        for _ in range(4):
+            f = np.polyfit(ys[k], xs[k], 1)
+            k = np.abs(np.polyval(f, ys) - xs) <= 1.5
+        return f
+    L, R = edge(True), edge(False)
     yy0, xx0 = np.mgrid[0:h, 0:w]
-    outside = green & ((xx0 < np.polyval(L, yy0) - 0.5) | (xx0 > np.polyval(R, yy0) + 0.5))
+    xl = np.round(np.polyval(L, yy0)); xr = np.round(np.polyval(R, yy0))
+    outside = (xx0 < xl) | (xx0 > xr)
     yy, xx = np.mgrid[0:h, 0:w]
     yy = yy + Y0
+    inside = ~outside
     out = np.zeros((h, w), bool)
-    out |= (sub == 15) | (sub == 1)
-    out |= outside
-    out |= green & ~outside & ((xx + yy) % 2 == 1)
+    out |= inside & ((sub == 15) | (sub == 1))
+    out |= green & inside & ((xx + yy) % 2 == 1)
+    # como en el MSX1: fuera tinta solida, un pixel de fondo y la linea de fondo continua
+    out |= (xx0 < xl - 1) | (xx0 > xr + 1)
+    out &= ~((xx0 == xl - 1) | (xx0 == xr + 1))
+    out |= (xx0 == xl) | (xx0 == xr)
+    out[0] = True; out[-1] = True                     # lineas de banda (arriba y abajo)
     return out
 
 
