@@ -4,7 +4,8 @@ Se usan las interrupciones del gate array (cada 52 lineas): con R7=29 (la imagen
 respecto al VSYNC) caen en y=78 (en la franja de cuadros, antes de la pista que empieza en y=80) y en
 y=130 (entre la pista, que acaba en y=127, y el marcador, que empieza en y=136).
 En la repeticion ampliada (MATCH=2) la pista empieza en y=112: se espera desde y=78 hasta ~y=104.
-El manejador de interrupcion del juego (7511h) cuenta las interrupciones desde el VSYNC."""
+El manejador de interrupcion del juego (7511h) cuenta las interrupciones desde el VSYNC.
+No se toca nada mientras la paleta esta en negro (fundidos: la tinta 0 de la tabla 73B2h no es 15h)."""
 COURT = 0x0E | 0x40      # naranja
 TOP = 0x15 | 0x40        # azul brillante (el del juego)
 SRC = """
@@ -20,6 +21,9 @@ RASTER:
   ld a,(MATCH)
   or a
   jp z,751Bh
+  ld a,(73B2h)
+  cp 15h
+  jp nz,751Bh
   ld bc,7F00h
   out (c),c
   ld a,{TOP}
@@ -34,16 +38,20 @@ ra_n:
   ld a,(MATCH)
   or a
   jp z,7533h
+  ld a,(73B2h)
+  cp 15h
+  jp nz,7533h
   ld a,c
   cp 3
-  jr z,ra_c
+  jp z,ra_c
   cp 4
   jp nz,7533h
   ld a,(MATCH)
   cp 2
   jp z,7533h
   ld a,{TOP}
-  jr ra_s
+  jp ra_s
+@@SPLIT@@
 ra_c:
   ld a,(MATCH)
   cp 2
@@ -64,14 +72,10 @@ MLOOP:
   ld bc,0BD00h + 29
   out (c),c
   jp 8348h
-; fundido a negro (7588h) y zoom (2417h): desactiva y deja el azul
+; fundido a negro (7588h): desactiva (el fundido pone todas las tintas, la 0 incluida)
 MOFF:
   xor a
   ld (MATCH),a
-  ld bc,7F00h
-  out (c),c
-  ld a,{TOP}
-  out (c),a
   ret
 @@SPLIT@@
 BLACKH:
@@ -79,11 +83,16 @@ BLACKH:
   xor a
   ld (75F0h),a
   ret
-ZOOMH:
-  call MOFF
+; 2502h: fin de cada fila de la imagen ampliada. Cuando ya va por y=104 (fila 52 de 100) la parte
+; de arriba es la imagen ampliada y la de abajo la pista normal: a partir de ahi, colores de la repeticion
+ZROW:
+  ld b,a
+  cp 48
+  jr nz,zr_1
   ld a,2
   ld (MATCH),a
-  ld hl,6792h
+zr_1:
+  ld de,0018h
   ret
 @@SPLIT@@
 ; repeticion ampliada: la pista empieza en y=112 (franja de cuadros y=98-111); la interrupcion
@@ -106,4 +115,6 @@ def apply(im):
     im.poke(0x7511, [0xC3] + w(L['RASTER']), [0xF3, 0xC5, 0xF5])
     im.poke(0x02A3, [0xCD] + w(L['MLOOP']), [0xCD, 0x48, 0x83])
     im.poke(0x7588, [0xCD] + w(L['BLACKH']) + [0], [0xAF, 0x32, 0xF0, 0x75])
-    im.poke(0x2417, [0xCD] + w(L['ZOOMH']), [0x21, 0x92, 0x67])
+    im.poke(0x2502, [0xCD] + w(L['ZROW']) + [0], [0x47, 0x11, 0x18, 0x00])
+    # al redibujar la pantalla del partido (tras canasta/descanso) ya con los colores del partido
+    im.poke(0x101F, [0xCD] + w(L['MLOOP']), [0xCD, 0x48, 0x83])
