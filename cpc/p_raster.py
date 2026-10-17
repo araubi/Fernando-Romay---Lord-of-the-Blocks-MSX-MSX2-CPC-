@@ -76,6 +76,8 @@ MLOOP:
 MOFF:
   xor a
   ld (MATCH),a
+  ld a,2
+  ld (7394h),a          ; FULLF de p_partial: tras el fundido, copia y volcado completos
   ret
 @@SPLIT@@
 BLACKH:

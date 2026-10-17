@@ -70,12 +70,20 @@ class Img:
             code, L, _ = assemble(x, 0x4000, cs); sizes.append(len(code))
         orgs = [None] * len(sizes)
         free = [list(r) for r in s.free]
-        for k in sorted(range(len(sizes)), key=lambda k: -sizes[k]):     # los grandes primero, en el hueco mas justo
-            n = sizes[k]
-            cand = [r for r in free if r[1] - r[0] >= n]
-            if not cand: raise RuntimeError('sin hueco para %s (%d bytes); huecos %s' % (name, n, [b - a for a, b in free]))
-            r = min(cand, key=lambda r: r[1] - r[0])
-            orgs[k] = r[0]; r[0] += n
+        order = sorted(range(len(sizes)), key=lambda k: -sizes[k])
+        def dfs(i):            # los grandes primero; busqueda con vuelta atras sobre los huecos
+            if i == len(order): return True
+            k = order[i]; n = sizes[k]; tried = set()
+            for r in sorted(free, key=lambda r: r[1] - r[0]):
+                sz = r[1] - r[0]
+                if sz < n or sz in tried: continue
+                tried.add(sz)
+                orgs[k] = r[0]; r[0] += n
+                if dfs(i + 1): return True
+                r[0] -= n
+            return False
+        if not dfs(0):
+            raise RuntimeError('sin hueco para %s (%s bytes); huecos %s' % (name, sizes, [b - a for a, b in free]))
         labs = dict(guess)
         for _ in range(6):
             new = {}; codes = []
@@ -116,10 +124,11 @@ FREE = [      # (desde, hasta) huecos de RAM libres dentro de CB.BIN (verificado
     (0x7F08, 0x80E7),     # glifos 61h-7Fh (minusculas, sin uso) + restos de un cargador (8000h-80E6h)
     (0x255A, 0x2648),     # copia muerta de la rutina de zoom (sin referencias) + ceros
     (0x1035, 0x109A),     # restos de codigo repetidos tras la cadena 'TIME' (sin referencias; la tabla empieza en 109Ah)
+    (0x10C4, 0x10C7),     # entrada de la tabla de saltos sin uso (JP 1BD3h)
     (0xBF68, 0xBFB8),     # entre el bufer de dibujo y la pila (la pila no baja de BFC4h) (se carga con el bloque de arranque)
 ]
 
-MODS = ['p_names', 'p_stats', 'p_controls', 'p_heads', 'p_jumps', 'p_lcd', 'p_charsel', 'p_bg', 'p_menu', 'p_jordan', 'p_intro', 'p_raster', 'p_direct']
+MODS = ['p_names', 'p_stats', 'p_controls', 'p_heads', 'p_jumps', 'p_lcd', 'p_charsel', 'p_bg', 'p_menu', 'p_jordan', 'p_intro', 'p_raster', 'p_partial']
 
 
 def make(mods=None):
