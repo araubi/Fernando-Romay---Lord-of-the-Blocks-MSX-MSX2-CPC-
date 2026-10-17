@@ -1,5 +1,6 @@
-"""Nueva disposicion de la pantalla del partido (CPC): pista y canastas 18 lineas mas abajo,
-banda gris doble entre la valla y la pista, publico fuera del bufer y marcador compacto."""
+"""Nueva disposicion de la pantalla del partido (CPC): pista y canastas 18 lineas mas abajo, publico y
+valla 13 lineas mas arriba, banda gris de tres escalones entre la valla y la pista, publico fuera del
+bufer y marcador compacto."""
 import numpy as np
 import smallfont
 DY = 18                     # la pista baja 18 lineas
@@ -8,30 +9,34 @@ BLUE, BLACK, WHITE, PINK = 0, 1, 2, 3
 LCD = ['3c66662466663c00', '0406060406060400', '3c06063c60603c00', '3c06063c06063c00', '2466663c06060400',
        '3c60603c06063c00', '3c60603c66663c00', '3c06060406060400', '3c66663c66663c00', '3c66663c06063c00']
 
-def band_edge(y):           # borde izquierdo de la banda (x del primer pixel de la banda)
-    return int(round(59 - (y - 72) * 3.0 / 25))
+LIFT = 13                   # el publico y la valla suben 13 lineas: el publico (11-41) queda fuera del bufer
+CROWD0 = 24 - LIFT          # primera linea del publico (11)
+BB0 = 55 - LIFT             # primera linea de la valla (42 = fila 0 del bufer)
+
+def band_edge(y):           # borde izquierdo de la banda (x del primer pixel); fijo desde la linea 84
+    return 56 if y >= 84 else 59 - (y - 60) * 3 // 24
+
+def band_stripe(y):         # franjas de tramado (escalones) de la banda, lineas 60-97
+    return 61 <= y <= 72 or 74 <= y <= 84 or 86 <= y <= 96
 
 def build_static(S):
     """S: pantalla estatica antigua (200x320 tintas). Devuelve la nueva."""
     N = np.full((200, 320), BLACK, np.uint8)
-    # publico y valla (lineas 24-72) sin las canastas
-    N[24:73] = S[24:73]
-    N[24:73, 0:56] = BLACK; N[24:73, 266:320] = BLACK
+    # publico (antes 24-54) y valla (55-72), 13 lineas mas arriba, sin las canastas
+    N[CROWD0:CROWD0 + 49] = S[24:73]
+    N[CROWD0:CROWD0 + 49, 0:56] = BLACK; N[CROWD0:CROWD0 + 49, 266:320] = BLACK
+    # banda: tres escalones de tramado entre la valla (acaba en 59) y la pista (98)
+    for y in range(60, 98):
+        xl = band_edge(y); xr = 319 - xl
+        for x in range(xl, xr + 1):
+            if x in (xl, xr): N[y, x] = WHITE
+            elif band_stripe(y): N[y, x] = WHITE if (x + y) % 2 == 0 else BLACK
+    xl = band_edge(60); N[59, xl:320 - xl] = WHITE
     # canastas (tableros) 18 lineas mas abajo
     for x0, x1 in ((28, 56), (266, 292)):
         N[16 + DY:66 + DY, x0:x1] = S[16:66, x0:x1]
-    # banda: linea blanca bajo la valla (72), dos franjas de tramado separadas por negro
-    for y in range(73, 98):
-        xl = band_edge(y); xr = 319 - xl
-        stripe = (74 <= y <= 84) or (86 <= y <= 96)
-        for x in range(xl, xr + 1):
-            if x in (xl, xr): N[y, x] = WHITE
-            elif stripe: N[y, x] = WHITE if (x + y) % 2 == 0 else BLACK
-    # el blanco de la linea 72 hasta los bordes de la banda
-    xl = band_edge(72); N[72, xl:320 - xl] = WHITE
     # pista
     N[80 + DY:128 + DY] = S[80:128]
-    # tableros encima de la banda si coinciden (no deberian)
     return N
 
 def rect(N, x0, y0, x1, y1, pen): N[y0:y1 + 1, x0:x1 + 1] = pen

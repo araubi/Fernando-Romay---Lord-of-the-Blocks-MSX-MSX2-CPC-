@@ -1,9 +1,10 @@
 """Nueva pantalla del partido (segun el montaje del usuario):
 - La pista, las canastas y los jugadores bajan 18 lineas: la fila 0 del bufer va a la linea 42 (antes 24).
   Las coordenadas del juego no cambian; solo cambia la tabla de lineas del volcado (8118h, ver p_raster).
-- Entre la valla y la pista hay una banda gris doble (en el fondo de 8B68h).
-- La parte de arriba del publico (lineas 24-41) queda fuera del bufer: se dibuja aparte y los jugadores
-  nunca la pisan. El publico animado se parte: filas 0-17 directas a pantalla (al volcar), 18-31 al bufer.
+- El publico y la valla suben 13 lineas: el publico (lineas 11-41) queda entero por encima del bufer, asi
+  que ni el balon ni los jugadores llegan nunca a su altura (lo que pasa de la fila 0 no se dibuja).
+  Se dibuja aparte y solo cambia con la animacion de celebracion, directa a pantalla (al volcar).
+- Entre la valla y la pista hay una banda gris de tres escalones (fondo empaquetado, ver p_bgpack).
 - Marcador nuevo y mas bajo (lineas 147-180): energia en dos barras de 12 (24 unidades, una mas que
   antes), balon de posesion y personales en la fila de arriba; nombre con letra pequena (5x7, avance 6)
   y puntos en la de abajo; tiempo arriba en el centro y reloj de posesion (30) debajo.
@@ -46,6 +47,7 @@ SETUP:
 @@SPLIT@@
 SETUP2:
   call CROWDF
+  call CREST
   ld de,{P5}+2
   ld hl,{TAB5}
   ld bc,0208h
@@ -112,12 +114,12 @@ BLR:
   djnz BLR
   ret
 @@SPLIT@@
-; parte de arriba del publico (lineas 24-41): fila en negro y bordes; luego las dos mitades
-; (filas 0-1 iguales en la animacion; filas 2-17 guardadas en los huecos de la memoria de pantalla)
+; publico (lineas 11-41, fuera del bufer): fila en negro y bordes (izquierda guardada, derecha en espejo)
 CROWDF:
   ld hl,EDGES
-  ld a,24
+  ld a,{C0}
 cf_1:
+  push af
   call LADR
   push hl
   ld h,d
@@ -126,40 +128,85 @@ cf_1:
   ld (hl),0F0h
   ld bc,63
   ldir
+  pop hl
   jp CROWDF2
 @@SPLIT@@
 CROWDF2:
-  pop hl
   call LADR
   ex de,hl
-  ld bc,9
+  ld bc,8
   add hl,bc
   ex de,hl
-  ldi
-  ldi
+  push hl
+  ld bc,3
+  ldir
+  pop hl
   ex de,hl
   ld bc,42
   add hl,bc
   ex de,hl
-  ldi
-  ldi
-  inc a
-  cp 42
-  jp nz,cf_1
   jp CROWDF3
 @@SPLIT@@
 CROWDF3:
+  ld b,3
+  inc hl
+  inc hl
+cf_2:
+  ld a,(hl)
+  dec hl
+  call MIRB
+  ld (de),a
+  inc de
+  djnz cf_2
+  inc hl
+  inc hl
+  inc hl
+  inc hl
+  pop af
+  inc a
+  cp 42
+  jp nz,cf_1
+  ret
+@@SPLIT@@
+; las mitades del publico en reposo: filas 0-1 (iguales a la animacion), 2-16 (huecos de la memoria de
+; pantalla, desde el segundo trozo del primer bloque) y 17-30 (XCROWD)
+CREST:
   ld hl,{CHEER}
   ld bc,0
-  ld a,24
+  ld de,{C0}*256+{C0}+2
   call HALV
-  ld hl,0C7D0h
+  ld hl,0C7E5h
   ld bc,07D6h
-  ld a,26
-; las dos mitades del publico de arriba desde la linea A hasta la 41, origen HL (21 bytes por fila);
+  ld de,({C0}+2)*256+{C0}+17
+  call HALV
+  ld hl,XCROWD
+  ld bc,0
+  ld de,({C0}+17)*256+42
+  jp HALV
+@@SPLIT@@
+; byte con los 4 pixeles en orden inverso
+MIRB:
+  push bc
+  ld c,a
+  ld b,8
+mb_1:
+  rr c
+  rla
+  djnz mb_1
+  rlca
+  rlca
+  rlca
+  rlca
+  pop bc
+  ret
+@@SPLIT@@
+; las dos mitades del publico desde la linea D hasta la E-1, origen HL (21 bytes por fila);
 ; tras cada linea impar se suma BC (0 seguido, 07D6h en los huecos de pantalla: 2 filas por bloque)
 HALV:
   ld (hv_s+1),bc
+  ld a,e
+  ld (hv_e+1),a
+  ld a,d
 hv_1:
   call LADR
   push hl
@@ -183,11 +230,12 @@ hv_s:
   add hl,bc
 hv_2:
   inc a
+hv_e:
   cp 42
   jp nz,hv_1
   ret
 @@SPLIT@@
-; 02D6h: antes del volcado, la parte de arriba del publico animado (1: animado, 2: se repone)
+; 02D6h: antes del volcado, el publico animado (1: animado, 2: se repone)
 CHPD:
   ld a,(CHS)
   or a
@@ -196,24 +244,23 @@ CHPD:
   jr nz,cp_2
   ld a,2
   ld (CHS),a
-  ld hl,{CHEER}+42
+  ld hl,{CHEER}
   ld bc,0
-  jr cp_3
+  ld de,{C0}*256+42
+  call HALV
+  jp PDUMP
 cp_2:
   xor a
   ld (CHS),a
-  ld hl,0C7D0h
-  ld bc,07D6h
-cp_3:
-  ld a,26
-  call HALV
+  call CREST
   jp PDUMP
 @@SPLIT@@
-; 2190h: publico animado (se apunta el rectangulo del bufer y se marca la parte de arriba)
+; 2190h: publico animado: todo va directo a pantalla, nada al bufer
 CHREC2:
   ld a,1
   ld (CHS),a
-  jp CHREC
+  pop hl
+  ret
 CHS: db 0
 @@SPLIT@@
 ; 1C57h: una unidad de energia. A indice (0-23), C 0Eh encendida / F0h apagada, L 59h izq / 80h dcha
@@ -505,8 +552,17 @@ MENU2:
   jp {MENUH}
 STAT2:
   call LEAVE
+  ld a,{C0}
+  ld b,13
+  call CLRL
   ld a,128
-st2_1:
+  ld b,18
+  call CLRL
+  jp 1E39h
+@@SPLIT@@
+; B lineas en negro desde la linea A (las 64 columnas del bufer)
+CLRL:
+  push bc
   call LADR
   ld h,d
   ld l,e
@@ -514,10 +570,10 @@ st2_1:
   ld (hl),0F0h
   ld bc,63
   ldir
+  pop bc
   inc a
-  cp 146
-  jr nz,st2_1
-  jp 1E39h
+  djnz CLRL
+  ret
 @@SPLIT@@
 ; borrado de pantalla (en lugar de 758Eh con HL=C000h, BC=4000h) sin tocar los huecos de cada bloque
 CLS:
@@ -546,8 +602,11 @@ INIT = """
 MYINIT:
   di
   ld hl,BCROWD
-  ld de,0C7D0h
-  ld a,8
+  ld de,0C7E5h
+  ld bc,21
+  ldir
+  ld de,0CFD0h
+  ld a,7
 mi_1:
   push de
   ld bc,42
@@ -575,28 +634,33 @@ INIT0 = 0xBB54                # bloque de arranque libre (ceros, sin uso hasta q
 
 def apply(im):
     L0 = im.labels
-    S = old_static(im)
+    S = im.oldS
     N = design.build_static(S)
-    # el publico de arriba: las dos mitades iguales (la animacion usa la misma para las dos)
-    N[24:42, 32 + 4 * 32:32 + 4 * 53] = N[24:42, 32 + 4 * 11:32 + 4 * 32]
+    C0 = design.CROWD0
+    # el publico: las dos mitades iguales (la animacion usa la misma para las dos)
+    N[C0:C0 + 31, 32 + 4 * 32:32 + 4 * 53] = N[C0:C0 + 31, 32 + 4 * 11:32 + 4 * 32]
     design.scoreboard(N)
     design.lcd(N, 152, 168, '30', design.PINK)
-    # fondo nuevo (filas 0-55; la pista, filas 56-103, no cambia)
-    newbg = bg.encode(N[42:146, 32:288])
-    assert newbg[56 * 64:] == im.rd(BG + 56 * 64, 48 * 64), 'la pista deberia ser la misma'
-    im.poke(BG, newbg)
-    # publico de arriba: bordes (columnas 9-10 y 53-54 del bufer) y media fila (11-31); el resto en negro
-    top = bg.encode(N[24:42, 32:288])
-    edges = bytearray(); crowd = bytearray()
+    # publico (lineas 11-41): bordes de la izquierda (columnas 9-10 del bufer; la derecha es su espejo)
+    # y media fila (11-31); el resto en negro
+    def mirb(v):
+        r = 0
+        for k in range(4):
+            r |= ((v >> (7 - k)) & 1) << (4 + k) | ((v >> (3 - k)) & 1) << k
+        return r
+    top = bg.encode(N[C0:C0 + 31, 32:288])
+    edges = bytearray(); crowd = bytearray(); xcrowd = bytearray()
     cheer = im.rd(CHEER, 21 * 2)
-    for y in range(18):
+    for y in range(31):
         row = top[64 * y:64 * y + 64]
-        edges += row[9:11] + row[53:55]
-        if y >= 2: crowd += row[11:32]
-        else: assert row[11:32] == cheer[21 * y:21 * y + 21]
-        for x in list(range(0, 9)) + list(range(55, 64)):
-            if y >= 10 and x in (2, 3, 60, 61): continue     # tapas de los tableros (se dibujan aparte)
-            assert row[x] == 0xF0, ('publico de arriba', y, x, hex(row[x]))
+        edges += row[8:11]
+        assert row[53:56] == bytes(mirb(v) for v in row[10:7:-1]), ('bordes', y)
+        if y < 2: assert row[11:32] == cheer[21 * y:21 * y + 21]
+        elif y < 17: crowd += row[11:32]
+        else: xcrowd += row[11:32]
+        for x in list(range(0, 8)) + list(range(56, 64)):
+            if C0 + y >= 34 and x in (2, 3, 60, 61): continue     # tapas de los tableros (se dibujan aparte)
+            assert row[x] == 0xF0, ('publico', y, x, hex(row[x]))
         assert row[32:53] == row[11:32]
     sb = b''.join(bg.encode(N[y:y + 1, 32:288]) for y in range(146, 184))
     sbz = lz.compress(sb)
@@ -605,7 +669,7 @@ def apply(im):
         out = [name + ':']
         for i in range(0, len(data), 16): out.append('  db ' + ','.join(str(b) for b in data[i:i + 16]))
         return '\n'.join(out) + '\n'
-    data = ['@@SPLIT@@\n' + dbs('EDGES', edges), '@@SPLIT@@\n' + dbs('SBZ', sbz)]
+    data = ['@@SPLIT@@\n' + dbs('EDGES', edges), '@@SPLIT@@\n' + dbs('SBZ', sbz), '@@SPLIT@@\n' + dbs('XCROWD', xcrowd)]
     font = smallfont.data()
     fd = {c: font[7 * i:7 * i + 7] for i, c in enumerate(smallfont.ORDER)}
     f1 = b''.join(fd[c] for c in '0123456789')
@@ -613,7 +677,7 @@ def apply(im):
     assert len(f2) == 217 and F2 + len(f2) <= 0x226 and F1 + len(f1) <= 0x12C
     mh = im.rd(0x21EA, 3); assert mh[0] == 0xCD
     src = SRC.replace('{MENUH}', str(mh[1] | mh[2] << 8)).replace('{F1}', str(F1)).replace('{F2}', str(F2))
-    src = src.replace('{P5}', str(P5)).replace('{P6}', str(P6)).replace('{CHEER}', str(CHEER))
+    src = src.replace('{C0}', str(C0)).replace('{P5}', str(P5)).replace('{P6}', str(P6)).replace('{CHEER}', str(CHEER))
     src = src.replace('{TAB5}', str(line_addr(16 + design.DY) + 10)).replace('{TAB6}', str(line_addr(16 + design.DY) + 68))
     src += ''.join(data)
     # memoria liberada: piezas del marcador antiguo y su tabla, y el dibujo 8686h
@@ -636,12 +700,6 @@ def apply(im):
     im.poke(0x0FFF, [0xCD] + w(L['SETUP']), [0xCD, 0x86, 0x86])
     im.poke(0x02D6, [0xCD] + w(L['CHPD']), [0xCD] + w(L0['PDUMP']))
     im.poke(0x2190, [0xCD] + w(L['CHREC2']), [0xCD] + w(L0['CHREC']))
-    # publico animado: al bufer solo las filas 18-31 (en las filas 0-13 del bufer)
-    im.poke(0x219E, w(CHEER + 18 * 21), w(CHEER))
-    im.poke(0x21A4, [14], [0x20])
-    a = L0['CHREC']
-    assert im.rd(a + 2, 3) == bytes([0x01, 0x0B, 0x20])
-    im.poke(a + 4, [14])
     # energia: 24 unidades y dibujo en dos barras
     for a in (0x03CF, 0x0F3F, 0x0FBB): im.poke(a, [0x18], [0x17])
     im.poke(0x1BE1, [0x18], [0x17])

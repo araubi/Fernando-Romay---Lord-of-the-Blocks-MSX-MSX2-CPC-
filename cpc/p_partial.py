@@ -15,6 +15,7 @@ PTR = 0x7390
 MARK = 0x7392
 FULLF = 0x7394
 LEND = 0x7148
+BGTAB = 0xA2A8                  # tabla de filas del fondo (la rellena p_layout, que empaqueta el fondo)
 SRC = """
 ; 84F5h: (85C6h) fila, (85C7h) filas, (85C8h) x, (85C9h) ancho; devuelve A = filas
 DREC:
@@ -74,7 +75,7 @@ PREST:
   ld a,(FULLF)
   or a
   jp nz,8348h
-  ld hl,8B68h
+  ld hl,{BGTAB}
   ld de,8278h
   jp PCOPYL
 @@SPLIT@@
@@ -88,7 +89,7 @@ PDUMP:
   call 835Ah
   jr PSHIFT
 pd_1:
-  ld hl,0A568h
+  ld hl,8278h
   ld de,8118h
   call PCOPYL
 ; las entradas nuevas (MARK..PTR) pasan a ser las de la vuelta anterior
@@ -105,13 +106,26 @@ ps_1:
   ld (PTR),de
   ret
 @@SPLIT@@
-; copia los rectangulos de la lista (LIST..PTR): origen HL (filas de 64 bytes), destino tabla de filas DE
-; se usa la cadena de LDI del volcado original (8374h-83F7h), entrando segun el ancho
-PCOPYL:
-  ld (PCSRC+1),hl
-  ld (PCTAB+2),de
+; 8348h: fondo entero al bufer (por la tabla de filas del fondo)
+BGFULL:
+  ld hl,{BGTAB}
+  ld de,8278h
+  call PSETT
+  ld de,0040h
+  ld bc,6800h
+  jp PCOPY1
+@@SPLIT@@
+PSETT:
+  ld (PSTB+1),hl
+  ld (PDTB+1),de
   ld hl,PRL
   ld (83F5h),hl
+  ret
+@@SPLIT@@
+; copia los rectangulos de la lista (LIST..PTR): HL tabla de filas de origen, DE tabla de filas de destino
+; se usa la cadena de LDI del volcado original (8374h-83F7h), entrando segun el ancho
+PCOPYL:
+  call PSETT
   ld hl,{LIST}
 Pcl_1:
   ld a,(PTR)
@@ -134,72 +148,69 @@ Pcl_1:
 PCOPY1:
   ld a,c
   ld (PRX+1),a
-  ld a,64
-  sub e
-  ld (PSK+1),a
+  ld (PRX2+1),a
   ld a,0F4h
   sub e
   sub e
   ld (PCH+1),a
-  ld l,d
-  ld h,0
-  add hl,hl
-  ex de,hl
-PCTAB:
-  ld ix,0
-  add ix,de
-  ld a,l
-  ex de,hl
-  add hl,hl
-  add hl,hl
-  add hl,hl
-  add hl,hl
-  add hl,hl
-  ld e,c
-  ld d,0
-  add hl,de
-PCSRC:
-  ld de,0
-  add hl,de
-  push hl
+  push de
   ld hl,0
   ld d,h
-  ld e,a
 Pcm_1:
   add hl,de
   djnz Pcm_1
+  pop de
+  push hl
+PCOPY2:
+  ld l,d
+  ld h,0
+  add hl,hl
   ld b,h
   ld c,l
-  ld a,h
-  or l
-  pop hl
+PSTB:
+  ld hl,0
+  add hl,bc
+  ld (PSP+1),hl
+PDTB:
+  ld hl,0
+  add hl,bc
+  ld (PDP+1),hl
+  pop bc
+  ld a,b
+  or c
   ret z
-  jp PRL0
+  jp PRL
 @@SPLIT@@
-; fin de cada fila de la cadena (jp pe): siguiente fila
+; cada fila (tambien al final de cada fila de la cadena, jp pe): origen y destino desde las tablas
 PRL:
-  ld a,l
-PSK:
-  add a,0
-  ld l,a
-  jr nc,PRL0
-  inc h
-PRL0:
-  ld e,(ix+0)
-  ld d,(ix+1)
-  inc ix
-  inc ix
-  ld a,e
+PSP:
+  ld hl,0
+  ld e,(hl)
+  inc hl
+  ld d,(hl)
+  inc hl
+  ld (PSP+1),hl
 PRX:
-  add a,0
-  ld e,a
-  jr nc,PCH
-  inc d
+  ld hl,0
+  add hl,de
+  push hl
+PDP:
+  ld hl,0
+  ld e,(hl)
+  inc hl
+  ld d,(hl)
+  inc hl
+  ld (PDP+1),hl
+PRX2:
+  ld hl,0
+  add hl,de
+  ex de,hl
+  pop hl
 PCH:
   jp 8374h
 """
 def apply(im):
-    src = SRC.replace('{LIST}', str(LIST)).replace('{LEND}', str(LEND & 255))
+    src = SRC.replace('{BGTAB}', str(BGTAB)).replace('{LIST}', str(LIST)).replace('{LEND}', str(LEND & 255))
     im.labels.update({'PTR': PTR, 'MARK': MARK, 'FULLF': FULLF})
     im.poke(PTR, [LIST & 255, LIST >> 8, LIST & 255, LIST >> 8, 2], [0, 0, 0, 0, 0])
     im.free.append([FULLF + 1, 0x73A2])
@@ -209,6 +220,7 @@ def apply(im):
     w = lambda v: [v & 255, v >> 8]
     im.poke(0x84F5, [0xCD] + w(L['DREC']), [0x3A, 0xC7, 0x85])
     im.poke(0x2190, [0xCD] + w(L['CHREC']), [0x21, 0x0B, 0x00])
+    im.poke(0x8348, [0xC3] + w(L['BGFULL']), [0x21, 0x74, 0x83])
     im.poke(0x02D6, [0xCD] + w(L['PDUMP']), [0xCD, 0x5A, 0x83])
     a = im.labels['MLOOP']
     while im.rd(a, 3) != bytes([0xC3, 0x48, 0x83]): a += 1

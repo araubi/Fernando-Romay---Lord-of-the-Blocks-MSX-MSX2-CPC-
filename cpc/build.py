@@ -128,7 +128,7 @@ FREE = [      # (desde, hasta) huecos de RAM libres dentro de CB.BIN (verificado
     (0xBF68, 0xBFB8),     # entre el bufer de dibujo y la pila (la pila no baja de BFC4h) (se carga con el bloque de arranque)
 ]
 
-MODS = ['p_names', 'p_stats', 'p_controls', 'p_heads', 'p_jumps', 'p_lcd', 'p_charsel', 'p_bg', 'p_menu', 'p_jordan', 'p_intro', 'p_raster', 'p_partial', 'p_layout']
+MODS = ['p_names', 'p_stats', 'p_controls', 'p_heads', 'p_jumps', 'p_lcd', 'p_charsel', 'p_bg', 'p_menu', 'p_jordan', 'p_intro', 'p_raster', 'p_bgpack', 'p_partial', 'p_layout']
 
 
 def make(mods=None):

@@ -28,6 +28,14 @@ def chk(cpu):
     if bad and st['bad']<3: s.img().save('/tmp/claude-0/pb_%s_%d.png'%(tag,st['bad'])); print('bad',cpu.frames,bad,flush=True)
     return False
 c.hooks[0x02D9]=chk
+from p_partial import BGTAB
+def chk2(cpu):
+    if r[0x7394]==0:
+        for row in range(104):
+            a=r[BGTAB+2*row]|r[BGTAB+2*row+1]<<8
+            if r[a:a+64]!=r[0xA568+64*row:0xA568+64*row+64]: st['bgerr']+=1; break
+    return False
+c.hooks[0x02A6]=chk2
 end=c.frames+N; last=-1
 while c.frames<end:
     c.step()
