@@ -4,7 +4,8 @@ import cpm, dskw, importlib
 ORIG = '/home/claude/cpc/in/orig.dsk'
 CB0, CB1 = 0x226, 0xA568          # CB.BIN en memoria
 AN0 = 0xBFCC                      # ANIPAN.BIN
-XB0, XB1 = 0xA568, 0xA568 + 0x15EE   # bloque extra (copiado desde CED9h de ANIPAN al arrancar)
+XB0, XB1 = 0xA568, 0xBFB8   # bloque copiado desde CED9h de ANIPAN al arrancar (original: 15EEh bytes; ampliado
+                            # hasta BFB0h para tener codigo en BF68h-BFAFh, por encima del bufer y debajo de la pila)
 XSRC = 0xCED9
 CA0 = 0x19A                       # CARGA.BIN
 
@@ -17,6 +18,10 @@ class Img:
         body = lambda n: bytearray(s.raw[n][128:128 + (s.raw[n][0x18] | s.raw[n][0x19] << 8)])
         s.cb = body('CB.BIN'); s.an = body('ANIPAN.BIN'); s.ca = body('CARGA.BIN')
         s.bas = s.raw['BASKET.BAS']
+        need = XSRC - AN0 + (XB1 - XB0)
+        if len(s.an) < need: s.an += bytes(need - len(s.an))
+        assert s.ca[0x1DE - CA0:0x1E1 - CA0] == bytes([0x01, 0xEE, 0x15])
+        s.ca[0x1DF - CA0] = (XB1 - XB0) & 255; s.ca[0x1E0 - CA0] = (XB1 - XB0) >> 8
         s.extra = []      # ficheros nuevos: (nombre, ext, load, bytes)
         s.free = [list(r) for r in FREE]
         s.labels = {}
@@ -63,12 +68,14 @@ class Img:
         for x in srcs:
             cs = dict(s.labels); cs.update(guess)
             code, L, _ = assemble(x, 0x4000, cs); sizes.append(len(code))
-        orgs = []
+        orgs = [None] * len(sizes)
         free = [list(r) for r in s.free]
-        for n in sizes:
-            for r in free:
-                if r[1] - r[0] >= n: orgs.append(r[0]); r[0] += n; break
-            else: raise RuntimeError('sin hueco para %s (%d bytes)' % (name, n))
+        for k in sorted(range(len(sizes)), key=lambda k: -sizes[k]):     # los grandes primero, en el hueco mas justo
+            n = sizes[k]
+            cand = [r for r in free if r[1] - r[0] >= n]
+            if not cand: raise RuntimeError('sin hueco para %s (%d bytes); huecos %s' % (name, n, [b - a for a, b in free]))
+            r = min(cand, key=lambda r: r[1] - r[0])
+            orgs[k] = r[0]; r[0] += n
         labs = dict(guess)
         for _ in range(6):
             new = {}; codes = []
@@ -108,10 +115,11 @@ FREE = [      # (desde, hasta) huecos de RAM libres dentro de CB.BIN (verificado
     (0x86EE, 0x8AA8),     # bufer de ceros sin referencias
     (0x7F08, 0x80E7),     # glifos 61h-7Fh (minusculas, sin uso) + restos de un cargador (8000h-80E6h)
     (0x255A, 0x2648),     # copia muerta de la rutina de zoom (sin referencias) + ceros
-    (0x1035, 0x1080),     # restos de codigo repetidos tras la cadena 'TIME' (sin referencias)
+    (0x1035, 0x109A),     # restos de codigo repetidos tras la cadena 'TIME' (sin referencias; la tabla empieza en 109Ah)
+    (0xBF68, 0xBFB8),     # entre el bufer de dibujo y la pila (la pila no baja de BFC4h) (se carga con el bloque de arranque)
 ]
 
-MODS = ['p_names', 'p_stats', 'p_controls', 'p_heads', 'p_jumps', 'p_lcd', 'p_charsel', 'p_bg', 'p_menu', 'p_jordan', 'p_intro', 'p_raster']
+MODS = ['p_names', 'p_stats', 'p_controls', 'p_heads', 'p_jumps', 'p_lcd', 'p_charsel', 'p_bg', 'p_menu', 'p_jordan', 'p_intro', 'p_raster', 'p_direct']
 
 
 def make(mods=None):

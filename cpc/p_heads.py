@@ -99,9 +99,12 @@ def apply(im):
     code, _, _ = assemble(CODE, 0)
     assert 0x1345 + len(code) <= 0x1371
     im.poke(0x1345, code, [0x3E, 0x0A])
+    im.free.append([0x1345 + len(code), 0x1371])
     code, _, _ = assemble(CODE2, 0)
     assert 0x147C + len(code) <= 0x14A8
     im.poke(0x147C, code, [0x3E, 0x0A])
+    im.free.append([0x147C + len(code), 0x14A8])
     code, _, _ = assemble(CODE3, 0)
     assert 0x142D + len(code) <= 0x145D
     im.poke(0x142D, code, [0xDD, 0xCB, 0xFF, 0x56])
+    im.free.append([0x142D + len(code), 0x145D])
