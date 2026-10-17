@@ -1,9 +1,11 @@
 """Colores por zonas durante el partido (como el MSX2): la tinta 0 (fondo) cambia a mitad de pantalla.
 Arriba (publico y valla) azul, la pista color parque (naranja) y el marcador otra vez azul.
-Se usan las interrupciones del gate array (cada 52 lineas): con R7=29 (la imagen baja 8 lineas
-respecto al VSYNC) caen en y=78 (en la franja de cuadros, antes de la pista que empieza en y=80) y en
-y=130 (entre la pista, que acaba en y=127, y el marcador, que empieza en y=136).
-En la repeticion ampliada (MATCH=2) la pista empieza en y=112: se espera desde y=78 hasta ~y=104.
+Se usan las interrupciones del gate array (cada 52 lineas): con R7=31 (la imagen sube 8 lineas
+respecto al VSYNC) caen en y=94 (en la banda gris, antes de la pista que empieza en y=98) y en
+y=146 (entre la pista, que acaba en y=145, y el marcador, que empieza en y=147).
+En la repeticion ampliada la pista empieza en y=112 y y=94 cae en la banda ampliada; cuando la imagen
+ampliada ya pasa de y=146 (MATCH=2) la pista sigue naranja hasta abajo.
+Fuera del partido (menu y estadisticas, LEAVE) se vuelve a R7=30 y a la tabla de volcado original.
 El manejador de interrupcion del juego (7511h) cuenta las interrupciones desde el VSYNC.
 No se toca nada mientras la paleta esta en negro (fundidos: la tinta 0 de la tabla 73B2h no es 15h)."""
 COURT = 0x0E | 0x40      # naranja
@@ -53,9 +55,6 @@ ra_n:
   jp ra_s
 @@SPLIT@@
 ra_c:
-  ld a,(MATCH)
-  cp 2
-  call z,ZWAIT
   ld a,{COURT}
 ra_s:
   ld bc,7F00h
@@ -67,9 +66,13 @@ ra_s:
 MLOOP:
   ld a,1
   ld (MATCH),a
+  ld a,(8118h)
+  cp 98h
+  ld a,42
+  call nz,SETTAB
   ld bc,0BC07h
   out (c),c
-  ld bc,0BD00h + 29
+  ld bc,0BD00h + 31
   out (c),c
   jp 8348h
 ; fundido a negro (7588h): desactiva (el fundido pone todas las tintas, la 0 incluida)
@@ -80,16 +83,46 @@ MOFF:
   ld (7394h),a          ; FULLF de p_partial: tras el fundido, copia y volcado completos
   ret
 @@SPLIT@@
+; fuera del partido (menu y estadisticas): R7=30 y tabla de volcado original
+LEAVE:
+  ld bc,0BC07h
+  out (c),c
+  ld bc,0BD00h + 30
+  out (c),c
+  ld a,24
+; tabla de lineas del volcado (8118h): fila 0 del bufer en la linea A
+SETTAB:
+  ld l,a
+  ld h,0
+  add hl,hl
+  ld de,7B70h
+  add hl,de
+  ld de,8118h
+  ld b,104
+st_1:
+  ld a,(hl)
+  add a,8
+  ld (de),a
+  inc hl
+  inc de
+  ld a,(hl)
+  adc a,0
+  ld (de),a
+  inc hl
+  inc de
+  djnz st_1
+  ret
+@@SPLIT@@
 BLACKH:
   call MOFF
   xor a
   ld (75F0h),a
   ret
-; 2502h: fin de cada fila de la imagen ampliada. Cuando ya va por y=104 (fila 52 de 100) la parte
-; de arriba es la imagen ampliada y la de abajo la pista normal: a partir de ahi, colores de la repeticion
+; 2502h: fin de cada fila de la imagen ampliada. Cuando ya pasa de y=146 (fila 73 de 100) solo queda
+; el marcador antiguo por debajo: a partir de ahi la pista sigue naranja hasta abajo (MATCH=2)
 ZROW:
   ld b,a
-  cp 48
+  cp 27
   jr nz,zr_1
   ld a,2
   ld (MATCH),a
@@ -97,16 +130,6 @@ zr_1:
   ld de,0018h
   ret
 @@SPLIT@@
-; repeticion ampliada: la pista empieza en y=112 (franja de cuadros y=98-111); la interrupcion
-; llega en y=78: se esperan unas 26 lineas
-ZWAIT:
-  ld bc,238
-zw_1:
-  dec bc
-  ld a,b
-  or c
-  jr nz,zw_1
-  ret
 MATCH: db 0
 RCNT: db 0
 """
