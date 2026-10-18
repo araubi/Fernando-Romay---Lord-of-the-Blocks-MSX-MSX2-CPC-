@@ -172,9 +172,16 @@ PSHOWN: db 30
 PMAX: db 30
 @@SPLIT@@
 ; 22A1h: tras elegir 1 o 2 jugadores (y personaje en 1 jugador): menu del tiempo de posesion
+; la cabeza de Romay (mas alta) deja su fila de arriba (linea 71) en el jugador de la derecha
+; al cambiarla por la de Itu o Jordan: se borra en pantalla y en el bufer
 PMENU:
   call {SELH}
   push hl
+  ld hl,0
+  ld (0FAC0h),hl
+  ld (0FAC2h),hl
+  ld (0B160h),hl
+  ld (0B162h),hl
   ld hl,1638h
   ld (0064h),hl
   ld hl,0048h

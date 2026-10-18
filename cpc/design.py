@@ -78,10 +78,10 @@ def bench(N):
 # botijo junto al banco de la izquierda (lineas 73-87)
 JUG = [
     "    ##      ",
-    "   #WS#  #  ",
-    "    #S# #S# ",
-    "   #SSS#S#  ",
-    "  #SSSSSS#  ",
+    "WS###S##W#W#",
+    "SSS##S#W#S#W",
+    "#SSSSSS#S#W#",
+    "##SSSSSSS##W",
     " #SWSSSSSS# ",
     " #WSSSSSSS# ",
     "#SWSSSSSSSS#",
