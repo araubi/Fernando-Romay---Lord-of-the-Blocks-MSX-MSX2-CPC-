@@ -32,7 +32,7 @@ def build_static(S):
             if x in (xl, xr): N[y, x] = WHITE
             elif band_stripe(y): N[y, x] = WHITE if (x + y) % 2 == 0 else BLACK
     xl = band_edge(60); N[59, xl:320 - xl] = WHITE
-    bench(N); palco(N)
+    bench(N); palco(N); jug(N); sitter(N)
     # canastas (tableros) 18 lineas mas abajo
     for x0, x1 in ((28, 56), (266, 292)):
         N[16 + DY:66 + DY, x0:x1] = S[16:66, x0:x1]
@@ -74,6 +74,75 @@ def bench(N):
             pen = {'#': BLACK, 'S': PINK, 'W': WHITE}[c]
             N[BENCH_Y + dy, BENCH_X + dx] = pen
             N[BENCH_Y + dy, 319 - (BENCH_X + dx)] = pen
+
+# botijo junto al banco de la izquierda (lineas 73-87)
+JUG = [
+    "    ##      ",
+    "   #WS#  #  ",
+    "    #S# #S# ",
+    "   #SSS#S#  ",
+    "  #SSSSSS#  ",
+    " #SWSSSSSS# ",
+    " #WSSSSSSS# ",
+    "#SWSSSSSSSS#",
+    "#SSSSSSSSSS#",
+    "#SSSSSSSSSS#",
+    "#SSSSSSSSS##",
+    " #SSSSSSSS# ",
+    " #SSSSSSSS# ",
+    "  ##SSSS##  ",
+    "    ####    ",
+]
+def sprite(N, rows, x0, y0, transp=' '):
+    for dy, row in enumerate(rows):
+        for dx, c in enumerate(row):
+            if c != transp: N[y0 + dy, x0 + dx] = {'#': BLACK, 'S': PINK, 'W': WHITE, '.': BLUE}[c]
+def jug(N): sprite(N, JUG, 122, 88 - len(JUG))
+
+# Fernando Martin (el jugador de la derecha del original) sentado en el banco de la derecha:
+# cabeza de frente (fotograma 23h) sobre el cuerpo de frente (19h), sin muslos (van hacia nosotros)
+SIT_HEAD = [   # filas 3-15 de 23h
+    "...######...",
+    "..########..",
+    ".##########.",
+    ".####S#####.",
+    ".##SSSSSS##.",
+    ".#S##SS##S#.",
+    ".#S#S#S#SS#.",
+    ".#SSS#SSSS#.",
+    "..#S#SSSS#..",
+    "..#SS##SS#..",
+    "...#SSSS#...",
+    "...#SSSS#...",
+    "....####....",
+]
+SIT_BODY = [   # filas 5-17 y 24-30 de 19h
+    "...####SSSSSS####.......",
+    "..#SS#W#SSSS#W#SS#......",
+    ".#SSS#WW#SS#WW#SSS#.....",
+    ".#SS##WWW##WWW##SS#.....",
+    "#SS#.#WWWWWWWW#.#SS#....",
+    "#SS#..#WWWWWW#..#SS#....",
+    "#SS#..#WWWWWW#..#SS#....",
+    ".#SS#.#WWWWWW#.#SS#.....",
+    ".#SS#..#WWW##..#SS#.....",
+    ".#S#..#W###WW#..#S#.....",
+    "..##..#WWWWWW#..##......",
+    ".....#WWWW#WWW#.........",
+    ".....#WWWW#WWW#.........",
+    "....#WW#....#WW#........",
+    ".....#WW#..#WW#.........",
+    ".....####..####.........",
+    "....#####..#####........",
+    "...##WW##..##WW##.......",
+    "...#WWWW#..#WWWW#.......",
+    "....####....####........",
+]
+SIT_X = 216
+def sitter(N):
+    yb = 88 - len(SIT_BODY)
+    sprite(N, SIT_BODY, SIT_X, yb, '.')
+    sprite(N, SIT_HEAD, SIT_X + 4, yb - len(SIT_HEAD) + 1, '.')
 
 # palco VIP en el centro (ventana azul para el invitado y cartel DUCADOS), lineas 61-85
 def palco(N):
