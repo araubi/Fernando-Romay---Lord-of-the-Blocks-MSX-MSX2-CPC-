@@ -28,7 +28,7 @@ def chk(cpu):
     if bad and st['bad']<3: s.img().save('/tmp/claude-0/pb_%s_%d.png'%(tag,st['bad'])); print('bad',cpu.frames,bad,flush=True)
     return False
 c.hooks[0x02D9]=chk
-from p_partial import BGTAB
+BGTAB=im.bgtab
 def chk2(cpu):
     if r[0x7394]==0:
         for row in range(104):

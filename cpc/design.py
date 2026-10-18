@@ -17,7 +17,7 @@ def band_edge(y):           # borde izquierdo de la banda (x del primer pixel); 
     return 56 if y >= 84 else 59 - (y - 60) * 3 // 24
 
 def band_stripe(y):         # franjas de tramado (escalones) de la banda, lineas 60-97
-    return 61 <= y <= 72 or 74 <= y <= 84 or 86 <= y <= 96
+    return 61 <= y <= 72 or 74 <= y <= 96
 
 def build_static(S):
     """S: pantalla estatica antigua (200x320 tintas). Devuelve la nueva."""
@@ -32,12 +32,58 @@ def build_static(S):
             if x in (xl, xr): N[y, x] = WHITE
             elif band_stripe(y): N[y, x] = WHITE if (x + y) % 2 == 0 else BLACK
     xl = band_edge(60); N[59, xl:320 - xl] = WHITE
+    bench(N); palco(N)
     # canastas (tableros) 18 lineas mas abajo
     for x0, x1 in ((28, 56), (266, 292)):
         N[16 + DY:66 + DY, x0:x1] = S[16:66, x0:x1]
     # pista
     N[80 + DY:128 + DY] = S[80:128]
     return N
+
+# banco de suplentes de madera (izquierda; el derecho en espejo). Lineas 70-87: lo que pasa de la 87
+# costaria memoria (las filas 88-97 de la banda son todas iguales y se guardan una sola vez)
+BENCH = [
+    "################################################################",
+    "#WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW#",
+    "#SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS#",
+    "#SSSSSS###SSSSSSSSSSSSSSSS##SSSSSSSSSSSSSSSS###SSSSSSSSSSSSSSSS#",
+    "#SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS#",
+    "################################################################",
+    "  #SS#              #SS#              #SS#               #SS#   ",
+    "  #SS#              #SS#              #SS#               #SS#   ",
+    "################################################################",
+    "#WSWSWSWSWSWSWSWSWSWSWSWSWSWSWSWSWSWSWSWSWSWSWSWSWSWSWSWSWSWSWS#",
+    "#SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS#",
+    "#SSSSSSSSSSSSS##SSSSSSSSSSSSSSSSS##SSSSSSSSSSSSSSSSS##SSSSSSSSS#",
+    "#SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS#",
+    "#S#S#S#S#S#S#S#S#S#S#S#S#S#S#S#S#S#S#S#S#S#S#S#S#S#S#S#S#S#S#S##",
+    "################################################################",
+    "  #SS#              #SS#              #SS#               #SS#   ",
+    "  #SS#              #SS#              #SS#               #SS#   ",
+    "  #WW#              #WW#              #WW#               #WW#   ",
+]
+BENCH_Y, BENCH_X = 70, 64
+def bench(N):
+    for dy, row in enumerate(BENCH):
+        for dx, c in enumerate(row):
+            if c == ' ': continue
+            pen = {'#': BLACK, 'S': PINK, 'W': WHITE}[c]
+            N[BENCH_Y + dy, BENCH_X + dx] = pen
+            N[BENCH_Y + dy, 319 - (BENCH_X + dx)] = pen
+
+# palco VIP en el centro (ventana azul para el invitado y cartel DUCADOS), lineas 61-85
+def palco(N):
+    import smallfont
+    x0, x1 = 136, 183
+    N[61:86, x0:x1 + 1] = BLACK
+    N[61, x0:x1 + 1] = WHITE; N[61:86, x0] = WHITE; N[61:86, x1] = WHITE
+    N[62:73, x0 + 2:x1 - 1] = BLUE                 # interior del palco
+    N[73, x0:x1 + 1] = WHITE                          # baranda
+    N[74, x0 + 1:x1] = BLACK
+    N[75:85, x0 + 2:x1 - 1] = BLUE                 # cartel
+    N[85, x0:x1 + 1] = WHITE
+    for y in (75, 84): N[y, x0 + 2:x1 - 1] = WHITE
+    smallfont.render(N, x0 + 3, 76, 'DUCADOS', WHITE, bg=BLUE)
 
 def rect(N, x0, y0, x1, y1, pen): N[y0:y1 + 1, x0:x1 + 1] = pen
 def frame(N, x0, y0, x1, y1, pen):

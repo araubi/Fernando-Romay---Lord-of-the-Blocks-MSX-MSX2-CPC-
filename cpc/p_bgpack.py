@@ -4,7 +4,6 @@ cada fila. El fondo lo leen solo 8348h y la reposicion del volcado parcial (p_pa
 La memoria que sobra al final del fondo queda libre."""
 import bg, design
 from p_layout import old_static, BG
-from p_partial import BGTAB
 
 
 def apply(im):
@@ -20,8 +19,7 @@ def apply(im):
     for rw in rows:
         if rw not in uniq: uniq.append(rw)
         tab.append(BG + 64 * uniq.index(rw))
-    assert BG + 64 * len(uniq) <= BGTAB, len(uniq)
+    BGTAB = BG + 64 * len(uniq); im.bgtab = BGTAB
     im.poke(BG, b''.join(uniq))
     im.poke(BGTAB, b''.join(bytes([a & 255, a >> 8]) for a in tab))
-    im.free.append([BG + 64 * len(uniq), BGTAB])
     im.free.append([BGTAB + 208, 0xA568])

@@ -15,7 +15,7 @@ PTR = 0x7390
 MARK = 0x7392
 FULLF = 0x7394
 LEND = 0x7148
-BGTAB = 0xA2A8                  # tabla de filas del fondo (la rellena p_layout, que empaqueta el fondo)
+BGTAB = 0xA2A8                  # tabla de filas del fondo por defecto (p_bgpack la coloca tras el fondo empaquetado: im.bgtab)
 SRC = """
 ; 84F5h: (85C6h) fila, (85C7h) filas, (85C8h) x, (85C9h) ancho; devuelve A = filas
 DREC:
@@ -210,7 +210,7 @@ PCH:
   jp 8374h
 """
 def apply(im):
-    src = SRC.replace('{BGTAB}', str(BGTAB)).replace('{LIST}', str(LIST)).replace('{LEND}', str(LEND & 255))
+    src = SRC.replace('{BGTAB}', str(getattr(im, 'bgtab', BGTAB))).replace('{LIST}', str(LIST)).replace('{LEND}', str(LEND & 255))
     im.labels.update({'PTR': PTR, 'MARK': MARK, 'FULLF': FULLF})
     im.poke(PTR, [LIST & 255, LIST >> 8, LIST & 255, LIST >> 8, 2], [0, 0, 0, 0, 0])
     im.free.append([FULLF + 1, 0x73A2])
