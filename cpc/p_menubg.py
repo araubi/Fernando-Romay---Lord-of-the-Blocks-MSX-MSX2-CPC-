@@ -93,10 +93,26 @@ MBOX:
   jp TSET
 @@SPLIT@@
 ; 2270h: paleta del menu encendida -> cambio de tintas a media pantalla
+; (al volver a encender la paleta, por ejemplo al cambiar de nivel, se espera al VSYNC y se ponen ya las
+; tintas del rotulo: si no, la parte de arriba saldria un cuadro con blanco y rosa)
 MPON:
   ld a,3
   ld (MATCH),a
-  jp 7581h
+  ld b,0F5h
+mp_1:
+  in a,(c)
+  rra
+  jr nc,mp_1
+  call 7581h
+  ld bc,7F02h
+  out (c),c
+  ld a,85
+  out (c),a
+  inc c
+  out (c),c
+  ld a,76
+  out (c),a
+  ret
 """ % (calls, ROWS, ROWS * 64, scrmap.MENU_D)
     src += '@@SPLIT@@\n' + dbs('MGE', edge)
     for k, p in enumerate(parts): src += '@@SPLIT@@\n' + dbs('MG%d' % k, p)
