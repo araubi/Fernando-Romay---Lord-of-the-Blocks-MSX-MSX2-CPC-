@@ -1,5 +1,5 @@
 """recorrido largo: en la build vieja, escrituras fuera de las columnas 8-71; en la nueva, escrituras en
-las zonas libres de la pantalla (desde +640h de cada bloque) despues del arranque"""
+las zonas libres de la pantalla (filas 0 y 23-24 de cada bloque) desde el menu, salvo variables de lo colocado"""
 import sys, os, random, collections
 D = sys.argv[1]; mode = sys.argv[2]; N = int(sys.argv[3])
 sys.path.insert(0, D); os.chdir(D)
@@ -13,13 +13,13 @@ def wl(a, v):
     if a < 0xC000: return
     o = (a - 0xC000) & 0x7FF
     if NEW:
-        if armed[0] and o >= 0x640 and not any(p0 <= a < p0 + n for _, p0, n in PL): W[phase[0]][(hex(c.PC), hex(a))] += 1
+        if armed[0] and (o >= 0x5C0 or o < 0x40) and not any(p0 <= a < p0 + n for _, p0, n in PL): W[phase[0]][(hex(c.PC), hex(a))] += 1
     else:
         if o >= 2000: W[phase[0]][(hex(c.PC), 'gap')] += 1
         elif not (8 <= o % 80 <= 71) and v != m.ram[a]: W[phase[0]][(hex(c.PC), 'col%d' % (o % 80))] += 1
 m.wlog = wl
 def P(n, f): phase[0] = n; s.run(f); print(n, c.frames, flush=True)
-P('intro', 700); armed[0] = True; s.key('space'); P('menu', 800)
+P('intro', 700); s.key('space'); P('menu', 800); armed[0] = True
 if 'L' in mode:
     for k in range(3): s.key('3'); s.run(30)
 if '2' in mode: s.key('2'); P('pos', 100); s.key('2'); P('kick', 300)

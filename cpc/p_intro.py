@@ -84,7 +84,7 @@ def finish(im):
     descomprimir, asi que va justo detras del flujo y CARGA lo copia desde ahi."""
     img = picture()
     scr = screen_bytes(img)
-    for f0, f1 in scrmap.FREE_SCR:
+    for f0, f1 in scrmap.FREE_EARLY:
         o0, o1 = f0 - 0xC000, f1 - 0xC000
         assert not any(scr[o0:o1])
         scr[o0:o1] = im.scr[o0:o1]

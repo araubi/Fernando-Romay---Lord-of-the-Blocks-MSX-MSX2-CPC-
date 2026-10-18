@@ -132,7 +132,9 @@ FREE = [      # (desde, hasta) huecos de RAM libres dentro de CB.BIN (verificado
     (0x1035, 0x109A),     # restos de codigo repetidos tras la cadena 'TIME' (sin referencias; la tabla empieza en 109Ah)
     (0x10C4, 0x10C7),     # entrada de la tabla de saltos sin uso (JP 1BD3h)
     (0xBF68, 0xBFB8),     # entre el bufer de dibujo y la pila (la pila no baja de BFC4h) (se carga con el bloque de arranque)
-] + list(scrmap.FREE_SCR)   # zonas libres de la pantalla de 256x192 (448 bytes por bloque; llegan con la presentacion)
+] + list(scrmap.FREE_EARLY)   # zonas libres de la pantalla (512 bytes por bloque; llegan con la presentacion).
+# Las FREE_LATE (filas 0 y 23) no estan aqui: solo valen para datos que se usan despues de la presentacion
+# (p_menubg las llena con el rotulo del menu).
 
 MODS = ['p_names', 'p_stats', 'p_controls', 'p_heads', 'p_jumps', 'p_lcd', 'p_charsel', 'p_bg', 'p_menu', 'p_jordan', 'p_intro', 'p_raster', 'p_bgpack', 'p_partial', 'p_layout', 'p_shot', 'p_menubg', 'p_screen']
 

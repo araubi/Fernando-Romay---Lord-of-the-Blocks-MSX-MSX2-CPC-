@@ -48,11 +48,11 @@ SETUP:
   jp SETUP2
 @@SPLIT@@
 SETUP2:
-  xor a
-  ld b,{C0}
+  ld a,8
+  ld b,{C0}-8
   call CLRL
   ld a,181
-  ld b,19
+  ld b,3
   call CLRL
   call CROWDF
   call CREST
@@ -575,24 +575,24 @@ CLRL:
   djnz CLRL
   ret
 @@SPLIT@@
-; borrado de pantalla (en lugar de 758Eh con HL=C000h, BC=4000h): las 25 filas de cada bloque, sin
-; tocar sus zonas libres (desde +640h)
+; borrado de pantalla (en lugar de 758Eh con HL=C000h, BC=4000h): las filas 1-22 de cada bloque (las
+; lineas 8-183, las que se ven), sin tocar sus zonas libres
 CLS:
-  ld hl,0C000h
+  ld hl,0C040h
 cl_1:
   ld a,(758Fh)
   ld (hl),a
   ld d,h
   ld e,l
   inc de
-  ld bc,063Fh
+  ld bc,057Fh
   ldir
-  ld bc,01C1h
+  ld bc,0281h
   add hl,bc
   ld a,h
   or a
   jr nz,cl_1
-  dec hl
+  ld hl,0FFFFh          ; como 758Eh: HL=FFFFh, DE=0, BC=0 (7571h usa HL+1 como cursor)
   ld de,0
   ld b,d
   ld c,e

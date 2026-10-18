@@ -47,23 +47,49 @@ def apply(im):
     g, edge = graphic()
     z = lz.compress(g)
     assert lz.decompress(z) == g
-    parts = split(z, 440)
+    # primero trozos de 64 bytes en las zonas libres tardias de la pantalla (solo valen para datos que se
+    # usan despues de la presentacion), el resto en trozos normales
+    late = list(scrmap.FREE_LATE)
+    toks = split(z, 1)          # un token por trozo
+    toks = [t[:-1] for t in toks]
+    parts = []; cur = b''
+    for t in toks:
+        lim = 64 if len(parts) < len(late) else 440
+        if len(cur) + len(t) + 1 > lim: parts.append(cur + b'\0'); cur = b''
+        cur += t
+    parts.append(cur + b'\0')
     assert b''.join(p[:-1] for p in parts) + b'\0' == z
     im.menubg = (len(g), len(z), len(parts))
     dbs = lambda name, d: name + ':\n' + ''.join('  db ' + ','.join(str(b) for b in d[i:i + 16]) + '\n' for i in range(0, len(d), 16))
-    calls = ''.join('  ld hl,MG%d\n  call DZ\n' % k for k in range(len(parts)))
+    nl = min(len(late), len(parts))
+    for k in range(nl):
+        a0, a1 = late[k]; assert len(parts[k]) <= a1 - a0
+        im.poke(a0, parts[k])
+    im.menubg_late = nl
     src = """
 ; 21C8h: fondo del menu (en lugar de la cabecera de texto); direcciones absolutas
 MBG:
   ld de,0A568h
-%s  ld hl,MGE
+  ld ix,MGP
+mg_1:
+  ld l,(ix+0)
+  ld h,(ix+1)
+  ld a,h
+  or l
+  jr z,mg_2
+  call DZ
+  inc ix
+  inc ix
+  jr mg_1
+mg_2:
+  ld hl,MGE
   ld bc,64
   ldir
   jp MBG2
 @@SPLIT@@
 MBG2:
   ld hl,0A568h
-  xor a
+  ld a,%d
 mb_1:
   push af
   call SADR
@@ -81,14 +107,14 @@ mb_2:
   ldir
   pop af
   inc a
-  cp 200
+  cp %d
   jr nz,mb_2
   ld a,%d
   jp TSET
 @@SPLIT@@
-; 22B3h: ultimo recuadro antes de salir del menu al partido: despues, tabla de lineas normal
+; 22B3h: al salir del menu al partido, tabla de lineas normal (en lugar de la franja que borraba el
+; original bajo el recuadro: con el menu desplazado caeria fuera de la pantalla, y enseguida hay fundido)
 MBOX:
-  call 7424h
   xor a
   jp TSET
 @@SPLIT@@
@@ -113,9 +139,11 @@ mp_1:
   ld a,76
   out (c),a
   ret
-""" % (calls, ROWS, ROWS * 64, scrmap.MENU_D)
+""" % (scrmap.MENU_Y, scrmap.MENU_Y + ROWS, ROWS * 64, scrmap.Y1, scrmap.MENU_D)
     src += '@@SPLIT@@\n' + dbs('MGE', edge)
-    for k, p in enumerate(parts): src += '@@SPLIT@@\n' + dbs('MG%d' % k, p)
+    ptrs = ['%d' % late[k][0] for k in range(nl)] + ['MG%d' % k for k in range(nl, len(parts))] + ['0']
+    src += '@@SPLIT@@\nMGP:\n' + ''.join('  dw %s\n' % x for x in ptrs)
+    for k in range(nl, len(parts)): src += '@@SPLIT@@\n' + dbs('MG%d' % k, parts[k])
     L = im.place_many('menubg', src.split('@@SPLIT@@'))
     w = lambda v: [v & 255, v >> 8]
     im.poke(0x21CE, [0xCD] + w(L['MBG']), [0xCD, 0xBB, 0x10])
