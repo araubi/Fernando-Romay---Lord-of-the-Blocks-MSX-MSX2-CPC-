@@ -420,6 +420,7 @@ SBT:
   db 21,18,4,19,18
   db 21,5,11,0,18
   db 21,24,11,0,109
+  db 22,19,2,21,19
   db 0
 @@SPLIT@@
 ; letra pequena: E caracter, HL x en pixeles; lineas 168-174, tinta (73A4h) xor 1, fondo negro
