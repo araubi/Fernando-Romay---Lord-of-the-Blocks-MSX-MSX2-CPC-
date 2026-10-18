@@ -100,19 +100,19 @@ def sprite(N, rows, x0, y0, transp=' '):
 def jug(N): sprite(N, JUG, 122, 88 - len(JUG))
 
 # Fernando Martin (el jugador de la derecha del original) sentado en el banco de la derecha:
-# cabeza de frente (fotograma 23h) sobre el cuerpo de frente (19h), sin muslos (van hacia nosotros)
-SIT_HEAD = [   # filas 3-15 de 23h
-    "...######...",
-    "..########..",
-    ".##########.",
-    ".####S#####.",
-    ".##SSSSSS##.",
-    ".#S##SS##S#.",
-    ".#S#S#S#SS#.",
-    ".#SSS#SSSS#.",
-    "..#S#SSSS#..",
-    "..#SS##SS#..",
-    "...#SSSS#...",
+# cabeza de frente (fotograma 22h) sobre el cuerpo de frente (19h), sin muslos (van hacia nosotros)
+SIT_HEAD = [   # filas 3-15 de 22h (la cabeza de frente de F. Martin)
+    "...###..#...",
+    "..#####W##..",
+    "..#####W##..",
+    "..##S##W##..",
+    ".###SSSSS##.",
+    ".#SS##S####.",
+    ".#SSS#S#SS#.",
+    ".#SSSSSSS##.",
+    "..#S####S#..",
+    "..#SSSSSS#..",
+    "..#SSSSSS#..",
     "...#SSSS#...",
     "....####....",
 ]
