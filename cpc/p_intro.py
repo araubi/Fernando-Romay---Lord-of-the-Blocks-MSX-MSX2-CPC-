@@ -6,14 +6,15 @@ SRC = pickle.load(open('/home/claude/cpc/intro_src.pkl', 'rb'))
 CMAP = {1: 0, 9: 1, 15: 2, 2: 3, 4: 2, 7: 2}
 OX = 48            # la imagen del MSX2 (256x192) va en x=48 de los 320 px del CPC
 def to_cpc(a): return np.vectorize(lambda v: CMAP.get(int(v), 0))(a).astype(np.uint8)
-def screen_bytes(img):            # img 200x320 indices 0-3 -> 16 KB de pantalla (C000h)
+import scrmap
+def screen_bytes(img):            # img 200x320 indices 0-3 -> 16 KB de pantalla (C000h), 256x192 (bytes 8-71)
     scr = bytearray(0x4000)
     for y in range(200):
-        for bx in range(80):
+        for bx in range(8, 72):
             v = 0
             for k in range(4):
                 p = int(img[y, bx * 4 + k]); v |= ((p & 1) << (7 - k)) | (((p >> 1) & 1) << (3 - k))
-            scr[(y // 8) * 80 + (y % 8) * 2048 + bx] = v
+            scr[scrmap.addr(y, bx) - 0xC000] = v
     return scr
 def rect_bytes(img, x, y, w, h):
     out = bytearray()
@@ -76,19 +77,34 @@ HEADS = [0xC5E0, 0xC6C2, 0xC7A4, 0xC886, 0xC968, 0xCA4A, 0xCB2C, 0xCC0E]
 HANDS = [0xCBC0, 0xCC0A, 0xCC54, 0xCC9E]
 def apply(im):
     img = picture()
+    put_frames(im, img)
+def finish(im):
+    """al final (p_screen): la pantalla de la presentacion, con lo colocado en las zonas libres de la memoria
+    de pantalla (im.scr). El flujo comprimido puede pasar de CED8h: el bloque de A568h se copia antes de
+    descomprimir, asi que va justo detras del flujo y CARGA lo copia desde ahi."""
+    img = picture()
     scr = screen_bytes(img)
+    for f0, f1 in scrmap.FREE_SCR:
+        o0, o1 = f0 - 0xC000, f1 - 0xC000
+        assert not any(scr[o0:o1])
+        scr[o0:o1] = im.scr[o0:o1]
     seq = bytes([0, 0]) + bytes(reversed(scr))          # 0001h, 0000h, FFFFh ... C000h
     stream = compress(seq)
     an = im.an
     start = 0xBFF1
     end = start + len(stream) - 1
-    assert end <= 0xCED8, ('pantalla comprimida demasiado grande', len(stream))
-    o = start - 0xBFCC
-    an[o:0xCED9 - 0xBFCC] = bytes(0xCED9 - start)
-    an[o:o + len(stream)] = stream
+    xb = bytes(an[im.xsrc - 0xBFCC:im.xsrc - 0xBFCC + (0xBFB8 - 0xA568)])
+    xsrc = end + 1
+    assert xsrc + len(xb) <= 0x10000
+    head = bytes(an[0:start - 0xBFCC])
+    an[:] = head + stream + xb
     assert an[0:3] == bytes([0x21, 0xD8, 0xCE])
     an[1] = end & 255; an[2] = end >> 8
+    im.xsrc = xsrc
+    im.poke(0x01D8, [0x21, xsrc & 255, xsrc >> 8], [0x21, 0xD9, 0xCE])
     check(bytes(an), scr)
+    im.intro_stream = len(stream)
+def put_frames(im, img):
     # fotogramas (bloque A568h): balon (56,0) 32x32, cabeza (96,8) 32x56, mano (104,72) 32x32
     def put_frame(idx, x, y, w, h, patch):
         tab = im.rd(0xBA86 + 2 * idx, 2); a = 0xA568 + (tab[0] | tab[1] << 8)

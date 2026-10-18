@@ -1,5 +1,5 @@
 """Construccion de la version CPC: imagen de memoria tras la carga + parches -> ficheros y DSK."""
-import cpm, dskw, importlib
+import cpm, dskw, importlib, scrmap
 
 ORIG = '/home/claude/cpc/in/orig.dsk'
 CB0, CB1 = 0x226, 0xA568          # CB.BIN en memoria
@@ -23,12 +23,17 @@ class Img:
         assert s.ca[0x1DE - CA0:0x1E1 - CA0] == bytes([0x01, 0xEE, 0x15])
         s.ca[0x1DF - CA0] = (XB1 - XB0) & 255; s.ca[0x1E0 - CA0] = (XB1 - XB0) >> 8
         s.extra = []      # ficheros nuevos: (nombre, ext, load, bytes)
+        s.xsrc = XSRC     # donde esta el bloque de A568h dentro de ANIPAN.BIN (se recoloca al final, p_intro)
+        s.scr = bytearray(0x4000)   # zonas libres de la memoria de pantalla: van dentro de la presentacion
         s.free = [list(r) for r in FREE]
         s.labels = {}
     # acceso por direccion de ejecucion
     def _loc(s, a):
         if CB0 <= a < CB1: return s.cb, a - CB0
-        if XB0 <= a < XB1: return s.an, XSRC - AN0 + (a - XB0)
+        if XB0 <= a < XB1: return s.an, s.xsrc - AN0 + (a - XB0)
+        if 0xC000 <= a < 0x10000:
+            assert any(f0 <= a < f1 for f0, f1 in scrmap.FREE_SCR), 'pantalla visible: %04X' % a
+            return s.scr, a - 0xC000
         if CA0 <= a < CA0 + len(s.ca): return s.ca, a - CA0
         raise ValueError('direccion fuera de los ficheros: %04X' % a)
     def rd(s, a, n=1):
@@ -103,7 +108,8 @@ class Img:
     def mem(s):
         m = bytearray(65536)
         m[CB0:CB0 + len(s.cb)] = s.cb; m[AN0:AN0 + len(s.an)] = s.an
-        m[XB0:XB1] = s.an[XSRC - AN0:XSRC - AN0 + (XB1 - XB0)]
+        m[XB0:XB1] = s.an[s.xsrc - AN0:s.xsrc - AN0 + (XB1 - XB0)]
+        m[0xC000:0x10000] = s.scr
         return m
     def files(s):
         F = {'CB.BIN': bytes(s.cb), 'ANIPAN.BIN': bytes(s.an), 'CARGA.BIN': bytes(s.ca)}
@@ -126,9 +132,9 @@ FREE = [      # (desde, hasta) huecos de RAM libres dentro de CB.BIN (verificado
     (0x1035, 0x109A),     # restos de codigo repetidos tras la cadena 'TIME' (sin referencias; la tabla empieza en 109Ah)
     (0x10C4, 0x10C7),     # entrada de la tabla de saltos sin uso (JP 1BD3h)
     (0xBF68, 0xBFB8),     # entre el bufer de dibujo y la pila (la pila no baja de BFC4h) (se carga con el bloque de arranque)
-]
+] + list(scrmap.FREE_SCR)   # zonas libres de la pantalla de 256x192 (448 bytes por bloque; llegan con la presentacion)
 
-MODS = ['p_names', 'p_stats', 'p_controls', 'p_heads', 'p_jumps', 'p_lcd', 'p_charsel', 'p_bg', 'p_menu', 'p_jordan', 'p_intro', 'p_raster', 'p_bgpack', 'p_partial', 'p_layout', 'p_shot']
+MODS = ['p_names', 'p_stats', 'p_controls', 'p_heads', 'p_jumps', 'p_lcd', 'p_charsel', 'p_bg', 'p_menu', 'p_jordan', 'p_intro', 'p_raster', 'p_bgpack', 'p_partial', 'p_layout', 'p_shot', 'p_menubg', 'p_screen']
 
 
 def make(mods=None):

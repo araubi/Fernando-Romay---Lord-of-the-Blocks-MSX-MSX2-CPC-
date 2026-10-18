@@ -1,3 +1,4 @@
+import scrmap
 import sys, random, collections
 import build
 from sess import Sess
@@ -39,7 +40,7 @@ c.hooks[0x02A6]=chk2
 end=c.frames+N; last=-1
 while c.frames<end:
     c.step()
-    if c.PC>=0xC000 or c.PC<0x100: badpc[0]+=1
+    if c.PC<0x100 or not scrmap.code_ok(c.PC): badpc[0]+=1
     if c.frames%3000==0 and c.frames!=last:
         last=c.frames; s.shot('/tmp/claude-0/p2_%s_%d.png'%(tag,c.frames))
 print(tag, dict(st), 'badpc', badpc[0], flush=True)

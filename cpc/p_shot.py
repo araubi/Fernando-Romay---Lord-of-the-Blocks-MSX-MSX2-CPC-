@@ -178,8 +178,8 @@ PMENU:
   call {SELH}
   push hl
   ld hl,0
-  ld (0FAC0h),hl
-  ld (0FAC2h),hl
+  ld ({SCR71}),hl
+  ld ({SCR71}+2),hl
   ld (0B160h),hl
   ld (0B162h),hl
   ld hl,1638h
@@ -230,13 +230,14 @@ PMVAL: db 30,24,12
 PMTXT:
   db 80,79,83,69,83,73,79,78,255,49,45,32,51,48,32,83,255,50,45,32,50,52,32,83,255,51,45,32,49,50,32,83,255
 """
+import scrmap
 def apply(im):
     a = bytes(x ^ y for x, y in zip(b'CAMPO ATRAS', b' POSESION! '))
     assert im.rd(0x11BF, 11) == b'CAMPO ATRAS'
     w = lambda v: [v & 255, v >> 8]
     s = im.rd(0x0FFF, 3); assert s[0] == 0xCD
     sh = im.rd(0x22A1, 3); assert sh[0] == 0xCD
-    src = SRC.replace('{XS}', ','.join(str(x) for x in a)).replace('{SETUP}', str(s[1] | s[2] << 8)).replace('{SELH}', str(sh[1] | sh[2] << 8))
+    src = SRC.replace('{XS}', ','.join(str(x) for x in a)).replace('{SETUP}', str(s[1] | s[2] << 8)).replace('{SELH}', str(sh[1] | sh[2] << 8)).replace('{SCR71}', str(scrmap.addr(71 + scrmap.MENU_D, 64)))
     # historial de la repeticion: 6 vueltas menos
     im.poke(0x2528, w(T2), w(0x7085))
     im.poke(0x2535, w(T2 - 0x6792), w(0x08F3))

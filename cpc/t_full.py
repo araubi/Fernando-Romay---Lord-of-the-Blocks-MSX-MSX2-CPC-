@@ -1,3 +1,4 @@
+import scrmap
 """Partido completo (1 jugador) con capturas en el descanso, la segunda parte, el final y el menu."""
 import build, random, sys
 from sess import Sess
@@ -17,7 +18,7 @@ pend=[]; last=None; bad=0
 end=c.frames+N
 while c.frames<end:
     c.step()
-    if c.PC>=0xC000: bad+=1
+    if not scrmap.code_ok(c.PC): bad+=1
     if ev and ev[-1] is not last:
         last=ev[-1]; print(last, flush=True); pend += [(last[0]+k, '%s_%d_%d'%(last[1],last[0],k)) for k in (150,400)]
     if pend and c.frames>=pend[0][0]:

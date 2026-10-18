@@ -10,14 +10,14 @@
   y puntos en la de abajo; tiempo arriba en el centro y reloj de posesion (30) debajo.
   Los textos del marcador se recolocan en la salida de caracteres (79E2h)."""
 import numpy as np
-import bg, design, lz, smallfont
+import bg, design, lz, smallfont, scrmap
 
 BG = 0x8B68
 CHEER = 0x264A
 P5, P6 = 0x31AE, 0x31C0          # tapas de los tableros (2 bytes x 8 lineas), antes en las lineas 16-23
 
 
-def line_addr(y): return 0xC000 + (y >> 3) * 80 + (y & 7) * 0x800
+def line_addr(y): return scrmap.vaddr(y)       # columna 0 'virtual' (la 8 es la primera visible)
 
 
 def old_static(im):
@@ -32,6 +32,8 @@ def old_static(im):
 SRC = """
 ; ---- 0FFFh: dibujo fijo de la pantalla del partido (en lugar de 8686h) ----
 SETUP:
+  xor a
+  call TSET
   ld a,1
   ld (MATCH),a
   ld a,42
@@ -46,6 +48,12 @@ SETUP:
   jp SETUP2
 @@SPLIT@@
 SETUP2:
+  xor a
+  ld b,{C0}
+  call CLRL
+  ld a,181
+  ld b,19
+  call CLRL
   call CROWDF
   call CREST
   ld de,{P5}+2
@@ -168,19 +176,16 @@ cf_2:
   jp nz,cf_1
   ret
 @@SPLIT@@
-; las mitades del publico en reposo: filas 0-1 (iguales a la animacion), 2-16 (huecos de la memoria de
-; pantalla, desde el segundo trozo del primer bloque) y 17-30 (XCROWD)
+; las mitades del publico en reposo: filas 0-1 (iguales a la animacion), 2-16 (XC1) y 17-30 (XC2)
 CREST:
   ld hl,{CHEER}
   ld bc,0
   ld de,{C0}*256+{C0}+2
   call HALV
-  ld hl,0C7E5h
-  ld bc,07D6h
+  ld hl,{XC1}
   ld de,({C0}+2)*256+{C0}+17
   call HALV
-  ld hl,XCROWD
-  ld bc,0
+  ld hl,{XC2}
   ld de,({C0}+17)*256+42
   jp HALV
 @@SPLIT@@
@@ -200,10 +205,8 @@ mb_1:
   pop bc
   ret
 @@SPLIT@@
-; las dos mitades del publico desde la linea D hasta la E-1, origen HL (21 bytes por fila);
-; tras cada linea impar se suma BC (0 seguido, 07D6h en los huecos de pantalla: 2 filas por bloque)
+; las dos mitades del publico desde la linea D hasta la E-1, origen HL (21 bytes por fila, seguidas)
 HALV:
-  ld (hv_s+1),bc
   ld a,e
   ld (hv_e+1),a
   ld a,d
@@ -223,12 +226,6 @@ HALV2:
   add hl,bc
   ld bc,21
   ldir
-  bit 0,a
-  jr z,hv_2
-hv_s:
-  ld bc,0
-  add hl,bc
-hv_2:
   inc a
 hv_e:
   cp 42
@@ -552,6 +549,8 @@ MENU2:
   call LEAVE
   jp {MENUH}
 STAT2:
+  xor a
+  call TSET
   call LEAVE
   ld a,{C0}
   ld b,13
@@ -576,7 +575,8 @@ CLRL:
   djnz CLRL
   ret
 @@SPLIT@@
-; borrado de pantalla (en lugar de 758Eh con HL=C000h, BC=4000h) sin tocar los huecos de cada bloque
+; borrado de pantalla (en lugar de 758Eh con HL=C000h, BC=4000h): las 25 filas de cada bloque, sin
+; tocar sus zonas libres (desde +640h)
 CLS:
   ld hl,0C000h
 cl_1:
@@ -585,9 +585,9 @@ cl_1:
   ld d,h
   ld e,l
   inc de
-  ld bc,1999
+  ld bc,063Fh
   ldir
-  ld bc,49
+  ld bc,01C1h
   add hl,bc
   ld a,h
   or a
@@ -602,23 +602,6 @@ cl_1:
 INIT = """
 MYINIT:
   di
-  ld hl,BCROWD
-  ld de,0C7E5h
-  ld bc,21
-  ldir
-  ld de,0CFD0h
-  ld a,7
-mi_1:
-  push de
-  ld bc,42
-  ldir
-  pop de
-  ex de,hl
-  ld bc,0800h
-  add hl,bc
-  ex de,hl
-  dec a
-  jr nz,mi_1
   ld hl,BF1
   ld de,{F1}
   ld bc,70
@@ -670,7 +653,8 @@ def apply(im):
         out = [name + ':']
         for i in range(0, len(data), 16): out.append('  db ' + ','.join(str(b) for b in data[i:i + 16]))
         return '\n'.join(out) + '\n'
-    data = ['@@SPLIT@@\n' + dbs('EDGES', edges), '@@SPLIT@@\n' + dbs('SBZ', sbz), '@@SPLIT@@\n' + dbs('XCROWD', xcrowd)]
+    data = ['@@SPLIT@@\n' + dbs('EDGES', edges), '@@SPLIT@@\n' + dbs('SBZ', sbz),
+            '@@SPLIT@@\n' + dbs('XC1', crowd), '@@SPLIT@@\n' + dbs('XC2', xcrowd)]
     font = smallfont.data()
     fd = {c: font[7 * i:7 * i + 7] for i, c in enumerate(smallfont.ORDER)}
     f1 = b''.join(fd[c] for c in '0123456789')
@@ -678,7 +662,7 @@ def apply(im):
     assert len(f2) == 217 and F2 + len(f2) <= 0x226 and F1 + len(f1) <= 0x12C
     mh = im.rd(0x21EA, 3); assert mh[0] == 0xCD
     src = SRC.replace('{MENUH}', str(mh[1] | mh[2] << 8)).replace('{F1}', str(F1)).replace('{F2}', str(F2))
-    src = src.replace('{C0}', str(C0)).replace('{P5}', str(P5)).replace('{P6}', str(P6)).replace('{CHEER}', str(CHEER))
+    src = src.replace('{MD}', str(scrmap.MENU_D)).replace('{XC1}', 'XC1').replace('{XC2}', 'XC2').replace('{C0}', str(C0)).replace('{P5}', str(P5)).replace('{P6}', str(P6)).replace('{CHEER}', str(CHEER))
     src = src.replace('{TAB5}', str(line_addr(16 + design.DY) + 10)).replace('{TAB6}', str(line_addr(16 + design.DY) + 68))
     src += ''.join(data)
     # memoria liberada: piezas del marcador antiguo y su tabla, y el dibujo 8686h
@@ -688,10 +672,11 @@ def apply(im):
     L = im.place_many('layout', src.split('@@SPLIT@@'))
     # bloque de arranque: MYINIT y los datos que copia
     from asm import assemble
-    isrc = INIT.replace('{F1}', str(F1)).replace('{F2}', str(F2)) + dbs('BCROWD', crowd) + dbs('BF1', f1) + dbs('BF2', f2)
+    isrc = INIT.replace('{F1}', str(F1)).replace('{F2}', str(F2)) + dbs('BF1', f1) + dbs('BF2', f2)
     code, IL, _ = assemble(isrc, INIT0, dict(im.labels))
     assert INIT0 + len(code) <= 0xBF68 and im.rd(INIT0, len(code)) == bytes(len(code))
     im.poke(INIT0, code)
+    im.init_end = INIT0 + len(code)
     im.poke(0x01FE, [0xC3] + [IL['MYINIT'] & 255, IL['MYINIT'] >> 8], [0xC3, 0x26, 0x02])
     im.poke(0x21EA, [0xCD, L['MENU2'] & 255, L['MENU2'] >> 8], mh)
     im.poke(0x1DE5, [0xC3, L['STAT2'] & 255, L['STAT2'] >> 8], [0xC3, 0x39, 0x1E])

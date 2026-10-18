@@ -1,3 +1,4 @@
+import scrmap
 import sys, random, time, pickle
 import build
 from sess import Sess
@@ -20,7 +21,7 @@ bad=0; t=time.time(); end=s.c.frames+N; last=-1
 c=s.c
 while c.frames<end:
     c.step()
-    if c.PC>=0xC000 or c.PC<0x100: bad+=1
+    if c.PC<0x100 or not scrmap.code_ok(c.PC): bad+=1
     if c.frames%2500==0 and c.frames!=last:
         last=c.frames; s.shot('/tmp/claude-0/lt_%s_%d.png'%(tag,c.frames)); print(c.frames,'bad',bad,'%.0f'%(time.time()-t),flush=True)
 s.save('/tmp/claude-0/lt_%s_end.pkl'%tag)
