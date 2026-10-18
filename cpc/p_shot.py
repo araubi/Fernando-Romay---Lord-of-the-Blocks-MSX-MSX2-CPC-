@@ -1,12 +1,12 @@
-"""Reloj de posesion (30 segundos, reglas de 1984).
+"""Reloj de posesion (30, 24 o 12 segundos, a elegir en un menu antes del partido).
 - Cada segundo de reloj de juego (1C96h, en la interrupcion, solo cuando corre el tiempo) se mira quien
   tiene el balon (bit 6 de (ix+1), el mismo del balon del marcador). Si cambia de dueno, o el balon queda
   suelto (tiro, rebote), vuelve a 30; si sigue el mismo, baja uno.
 - Si llega a 0: la falta de CAMPO ATRAS del juego (saque para el otro), con el texto cambiado a POSESION!.
 - Con 2 segundos o menos, la maquina (1 jugador) tira desde donde este: se le pulsa el disparo.
 - Las cifras se pintan en el marcador (fila 22 de texto, que la salida de caracteres lleva al recuadro).
-- Para hacer sitio, el historial de la repeticion guarda 3 vueltas menos (27 en lugar de 30)."""
-T2 = 0x7085 - 3 * 0x4F          # nuevo tope del historial de la repeticion
+- Para hacer sitio, el historial de la repeticion guarda 6 vueltas menos (24 en lugar de 30)."""
+T2 = 0x7085 - 6 * 0x4F          # nuevo tope del historial de la repeticion
 SRC = """
 ; 1C96h: cada segundo del reloj del partido (interrupcion; solo A y HL)
 PSEC:
@@ -30,7 +30,7 @@ ps_2:
   jr nz,ps_r
   jp PSEC2
 ps_r:
-  ld a,30
+  ld a,(PMAX)
   ld (PCNT),a
   or a
   ret
@@ -81,7 +81,7 @@ PPRINT2:
   ld a,(1124h)
   or a
   jr z,pp_r
-  ld a,30
+  ld a,(PMAX)
   ld (PCNT),a
   jr pp_2
 pp_r:
@@ -156,30 +156,88 @@ pf_x:
 ; 0FFFh: al montar la pantalla del partido, posesion a 30
 PSETUP:
   call {SETUP}
+  ld a,(PMAX)
   ld hl,PCNT
-  ld (hl),30
+  ld (hl),a
   inc hl
   ld (hl),0
+  ld a,0FFh
+  ld (PSHOWN),a
   ret
 PCNT: db 30
 PLAST: db 0
 PVIOL: db 0
 PSW: db 0
 PSHOWN: db 30
+PMAX: db 30
+@@SPLIT@@
+; 22A1h: tras elegir 1 o 2 jugadores (y personaje en 1 jugador): menu del tiempo de posesion
+PMENU:
+  call {SELH}
+  push hl
+  ld hl,1638h
+  ld (0064h),hl
+  ld hl,0048h
+  ld (006Ch),hl
+  ld hl,0026h
+  ld (006Eh),hl
+  call 7424h
+  ld de,PMTXT
+  ld hl,0C08h
+  call 10BBh
+  jp PMENU2
+@@SPLIT@@
+PMENU2:
+  ld hl,0C0Ah
+  call 10BBh
+  ld hl,0C0Ch
+  call 10BBh
+  ld hl,0C0Eh
+  call 10BBh
+pm_0:
+  call 233Ah
+  ld a,(0063h)
+  inc a
+  jr nz,pm_0
+pm_1:
+  call 233Ah
+  ld a,(0063h)
+  sub 31h
+  cp 3
+  jr nc,pm_1
+  jp PMENU3
+@@SPLIT@@
+PMENU3:
+  ld hl,PMVAL
+  add a,l
+  ld l,a
+  jr nc,pm_2
+  inc h
+pm_2:
+  ld a,(hl)
+  ld (PMAX),a
+  pop hl
+  ret
+PMVAL: db 30,24,12
+@@SPLIT@@
+PMTXT:
+  db 80,79,83,69,83,73,79,78,255,49,45,32,51,48,32,83,255,50,45,32,50,52,32,83,255,51,45,32,49,50,32,83,255
 """
 def apply(im):
     a = bytes(x ^ y for x, y in zip(b'CAMPO ATRAS', b' POSESION! '))
     assert im.rd(0x11BF, 11) == b'CAMPO ATRAS'
     w = lambda v: [v & 255, v >> 8]
     s = im.rd(0x0FFF, 3); assert s[0] == 0xCD
-    src = SRC.replace('{XS}', ','.join(str(x) for x in a)).replace('{SETUP}', str(s[1] | s[2] << 8))
-    # historial de la repeticion: 3 vueltas menos
+    sh = im.rd(0x22A1, 3); assert sh[0] == 0xCD
+    src = SRC.replace('{XS}', ','.join(str(x) for x in a)).replace('{SETUP}', str(s[1] | s[2] << 8)).replace('{SELH}', str(sh[1] | sh[2] << 8))
+    # historial de la repeticion: 6 vueltas menos
     im.poke(0x2528, w(T2), w(0x7085))
     im.poke(0x2535, w(T2 - 0x6792), w(0x08F3))
     im.poke(0x254E, w(T2), w(0x7085))
     im.free.append([T2 + 0x4F, 0x70D4])
     L = im.place_many('shot', src.split('@@SPLIT@@'))
     im.poke(0x0FFF, [0xCD] + w(L['PSETUP']), s)
+    im.poke(0x22A1, [0xCD] + w(L['PMENU']), sh)
     im.poke(0x1C96, [0xCD] + w(L['PSEC']), [0x32, 0x0A, 0x11])
     im.poke(0x02D3, [0xCD] + w(L['PPRINT']), [0xCD, 0x9D, 0x10])
     im.poke(0x128B, [0xCD] + w(L['PFIRE']), [0x3A, 0xFB, 0x85])

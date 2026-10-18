@@ -4,7 +4,7 @@ which=sys.argv[1]; N=int(sys.argv[2]); seed=int(sys.argv[3])
 files=None if which=='orig' else build.make().files()
 s=Sess(files=files) if files else Sess()
 s.run(700); s.key('space'); s.run(800); s.key('1'); s.run(60)
-if which!='orig': s.key('1'); s.run(60)
+if which!='orig': s.key('1'); s.run(60); s.key('1'); s.run(60)
 rnd=random.Random(seed); f=s.c.frames+10
 while f<s.c.frames+N:
     k=rnd.choice(['up','down','left','right','left','right','space','space']); d=rnd.randint(5,60)

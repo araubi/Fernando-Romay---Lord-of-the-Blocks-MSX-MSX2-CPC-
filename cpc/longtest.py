@@ -6,9 +6,9 @@ im=build.make()
 s=Sess(files=im.files()); s.run(700); s.key('space'); s.run(800)
 if 'L' in mode:
     for k in range(3): s.key('3'); s.run(30)
-if '2' in mode: s.key('2'); s.run(100)
+if '2' in mode: s.key('2'); s.run(100); s.key('1'); s.run(60)
 else:
-    s.key('1'); s.run(60); s.key('2' if 'R' in mode else '1'); s.run(100)
+    s.key('1'); s.run(60); s.key('2' if 'R' in mode else '1'); s.run(100); s.key('1'); s.run(60)
 rnd=random.Random(seed); f=s.c.frames+10
 keys1=['up','down','left','right','left','right','space','space']
 keys2=['w','s','a','d','shift']

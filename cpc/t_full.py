@@ -3,7 +3,7 @@ import build, random, sys
 from sess import Sess
 im=build.make(); L=im.labels
 s=Sess(files=im.files()); s.run(700); s.key('space'); s.run(800)
-s.key('1'); s.run(60); s.key('1'); s.run(100)
+s.key('1'); s.run(60); s.key('1'); s.run(100); s.key('1'); s.run(100)
 m=s.m; c=s.c; r=m.ram
 rnd=random.Random(int(sys.argv[1])); N=int(sys.argv[2]); f=c.frames+10
 while f<c.frames+N:
