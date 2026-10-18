@@ -197,7 +197,8 @@ SADR:
   ret
 @@SPLIT@@
 ; tabla de lineas 7B70h con la imagen desplazada A lineas hacia abajo (menu: los textos, recuadros y
-; munecos bajan bajo el rotulo; 0 en el resto). Lo que pasaria de la linea 199 se queda en la 199.
+; munecos bajan bajo el rotulo; 0 en el resto). Lo que pasaria de la linea 199 va a la 192 (fila 24, que
+; en el menu no se ve; desde ahi, sumar 800h para bajar de linea no se sale de la pantalla).
 TSET:
   ld (ts_d+1),a
   ld hl,7B70h
@@ -208,7 +209,7 @@ ts_d:
   add a,0
   cp 200
   jr c,ts_2
-  ld a,199
+  ld a,192
 ts_2:
   call SADR
   ld a,e

@@ -7,6 +7,8 @@ en la de 256x192 del CPC.
 - Los recuadros, textos y munecos del menu bajan 48 lineas (tabla de lineas desplazada, TSET), asi que
   el recuadro negro queda debajo del rotulo como en el MSX. Ya no se imprimen la cabecera de texto ni el
   copyright (estan en el rotulo).
+- Al salir del menu hacia el partido (22B3h) se vuelve a la tabla normal: el marcador (energia) se
+  dibuja antes de SETUP.
 - El rotulo (96 lineas) va comprimido (lz) en trozos; se descomprime en el bufer y se copia a pantalla."""
 import numpy as np, lz, scrmap
 ROWS = 96
@@ -84,6 +86,12 @@ mb_2:
   ld a,%d
   jp TSET
 @@SPLIT@@
+; 22B3h: ultimo recuadro antes de salir del menu al partido: despues, tabla de lineas normal
+MBOX:
+  call 7424h
+  xor a
+  jp TSET
+@@SPLIT@@
 ; 2270h: paleta del menu encendida -> cambio de tintas a media pantalla
 MPON:
   ld a,3
@@ -98,3 +106,4 @@ MPON:
     im.poke(0x2265, [0] * 6, [0x21, 0x15, 0x04, 0xCD, 0xBB, 0x10])       # sin copyright
     im.poke(0x226B, [0x3E, 0x13], [0x3E, 0x15])                          # tinta 0: cian
     im.poke(0x2270, [0xCD] + w(L['MPON']), [0xCD, 0x81, 0x75])
+    im.poke(0x22B3, [0xCD] + w(L['MBOX']), [0xCD, 0x24, 0x74])
