@@ -40,7 +40,7 @@ def build_static(S):
     N[80 + DY:128 + DY] = S[80:128]
     return N
 
-# banco de suplentes de madera (izquierda; el derecho en espejo). Lineas 70-87: lo que pasa de la 87
+# banco de suplentes de madera (izquierda; el derecho en espejo). Lineas 68-85 y sombra en 86-87: lo que pasa de la 87
 # costaria memoria (las filas 88-97 de la banda son todas iguales y se guardan una sola vez)
 BENCH = [
     "################################################################",
@@ -62,8 +62,12 @@ BENCH = [
     "  #SS#              #SS#              #SS#               #SS#   ",
     "  #WW#              #WW#              #WW#               #WW#   ",
 ]
-BENCH_Y, BENCH_X = 70, 64
+BENCH_Y, BENCH_X = 68, 64
 def bench(N):
+    # sombra negra de dos lineas bajo el banco (lineas 86-87)
+    y = BENCH_Y + len(BENCH)
+    N[y:y + 2, BENCH_X + 2:BENCH_X + len(BENCH[0]) + 2] = BLACK
+    N[y:y + 2, 319 - (BENCH_X + len(BENCH[0]) + 1):319 - (BENCH_X + 1)] = BLACK
     for dy, row in enumerate(BENCH):
         for dx, c in enumerate(row):
             if c == ' ': continue
