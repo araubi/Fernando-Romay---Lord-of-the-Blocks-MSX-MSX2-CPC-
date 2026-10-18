@@ -88,6 +88,24 @@ def palco(N):
     N[85, x0:x1 + 1] = WHITE
     for y in (75, 84): N[y, x0 + 2:x1 - 1] = WHITE
     smallfont.render(N, x0 + 3, 76, 'DUCADOS', WHITE, bg=BLUE)
+    # el invitado: Alan Sugar (pelo rizado, barba, traje y corbata negros, camisa blanca)
+    for dy, row in enumerate(VIP):
+        for dx, c in enumerate(row):
+            if c != '.': N[62 + dy, 149 + dx] = {'#': BLACK, 'S': PINK, 'W': WHITE}[c]
+
+VIP = [
+    ".....##.##.##.##.....",
+    "....##############...",
+    "...################..",
+    "...####SSSSSSSS####..",
+    "...###SS#SSSS#SS###..",
+    "....##SSSSSSSSSS##...",
+    "....##SS######SS##...",
+    ".....##S#SSSS#S##....",
+    "......##########.....",
+    "....####WWW#WWW####..",
+    "..#######WW#WW#######",
+]
 
 def rect(N, x0, y0, x1, y1, pen): N[y0:y1 + 1, x0:x1 + 1] = pen
 def frame(N, x0, y0, x1, y1, pen):
