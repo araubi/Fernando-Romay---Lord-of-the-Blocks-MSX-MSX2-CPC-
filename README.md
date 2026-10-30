@@ -36,15 +36,15 @@ cd cpc && python3 build_cpc.py      # -> out/Fernando_Romay_Lord_of_the_Blocks_C
 ```
 
 - **MSX1 y CPC:** las builds reproducen byte a byte los ficheros de `releases/`. Los datos que se sacan del original (`msx/state460.pkl`, `cpc/msx_ram.bin` y `cpc/msxfin_ram.bin`) se generan solos la primera vez con `msx/gen_state460.py` y `cpc/gen_msx_ram.py`.
-- **MSX2:** la ROM publicada se montó en la etiqueta `msx2-1.0`. Desde `msx/` en esa etiqueta, `s5_build.build(<cinta MSX1 del hack>)` la reproduce byte a byte, aunque esas versiones antiguas usan rutas absolutas del entorno de trabajo. En la rama principal el MSX2 incorpora cambios posteriores del MSX1 (73 bytes distintos) y no está probado.
+- **MSX2:** la ROM publicada se montó en la rama `version-msx2-1.0`. Desde `msx/` en esa rama, `s5_build.build(<cinta MSX1 del hack>)` la reproduce byte a byte, aunque esas versiones antiguas usan rutas absolutas del entorno de trabajo. En la rama principal el MSX2 incorpora cambios posteriores del MSX1 (73 bytes distintos) y no está probado.
 
 ## Historial
 
 El historial de `msx/` y `cpc/` es el del trabajo real, reescrito para quitar los ficheros del juego original y las cintas y ROM intermedias.
 
-Etiquetas:
-- `msx1-1.0`: MSX1 final.
-- `msx2-1.0`: MSX2 final.
+Ramas con el estado exacto de cada versión publicada:
+- `version-msx1-1.0`: MSX1 final.
+- `version-msx2-1.0`: MSX2 final.
 
 Muchos scripts de prueba (`t_*.py`, `chk.py`, etc.) son herramientas de trabajo: escriben capturas en `out/` y algunos esperan ficheros que no se publican.
 
