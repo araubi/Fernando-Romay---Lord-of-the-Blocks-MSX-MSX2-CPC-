@@ -1,6 +1,6 @@
 import re
 from asm import Asm
-L=open('/mnt/user-data/outputs/basket_master_msx.asm').read().split('\n')
+L=open('../out/basket_master_msx.asm').read().split('\n')
 labels={'CHKRAM':0}; pend=[]
 for ln in L:
     m=re.match(r'^([A-Za-z_][A-Za-z0-9_]*):',ln)

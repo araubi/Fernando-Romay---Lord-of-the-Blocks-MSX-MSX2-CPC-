@@ -1,6 +1,6 @@
 import re, base64, zlib
 from msx import *
-D=open('/home/claude/w/omr3.xml').read()
+D=open('omr3.xml').read()
 SNAPS=[m.start() for m in re.finditer(r'<item id="\d+" version="\d+">\s*<scheduler>',D)]
 END=D.find('<events>')
 def seg(k): return D[SNAPS[k]:(SNAPS[k+1] if k+1<len(SNAPS) else END)]

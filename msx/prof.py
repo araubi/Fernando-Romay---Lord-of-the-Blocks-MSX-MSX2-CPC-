@@ -3,10 +3,10 @@ from timing import *
 import sprite_patch as S
 def ranges():
     labs={}
-    for ln in open('/mnt/user-data/outputs/basket_master_msx.asm'):
+    for ln in open('../out/basket_master_msx.asm'):
         pass
     L=[]; pend=None
-    for ln in open('/mnt/user-data/outputs/basket_master_msx.asm'):
+    for ln in open('../out/basket_master_msx.asm'):
         m=re.match(r'^([A-Za-z_][A-Za-z0-9_]*):',ln)
         if m: pend=m.group(1); continue
         m=re.search(r';\s*([0-9A-F]{4}):',ln)

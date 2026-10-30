@@ -1,6 +1,8 @@
 import glob
 from PIL import Image
-CAS=glob.glob('/mnt/user-data/uploads/*Software*.cas')[0]
+import os
+# cinta ORIGINAL (no incluida): variable ORIG_CAS o el primer .cas de ../original/
+CAS=os.environ.get('ORIG_CAS') or (glob.glob(os.path.join(os.path.dirname(os.path.abspath(__file__)),'..','original','*.cas'))+[None])[0]
 H=bytes([0x1F,0xA6,0xDE,0xBA,0xCC,0x13,0x7D,0x74])
 def cas_blocks(data):
     pos=[];i=0

@@ -1,5 +1,5 @@
 import pickle, numpy as np
-pub,dp,ch,dc=pickle.load(open('/home/claude/cpc/karnov_src.pkl','rb'))
+pub,dp,ch,dc=pickle.load(open('karnov_src.pkl','rb'))
 MAP={1:1,2:3,12:1,15:2,14:2,6:0,10:0,3:0,11:2}
 def extract(img, d, y0, y1, x0, x1, grow=1):
     H=y1-y0; W=x1-x0
@@ -19,4 +19,4 @@ if __name__=='__main__':
         im=np.zeros(a.shape+(3,),np.uint8)
         for y in range(a.shape[0]):
             for x in range(a.shape[1]): im[y,x]=(90,90,90) if a[y,x]<0 else P[a[y,x]]
-        Image.fromarray(im).resize((a.shape[1]*16,a.shape[0]*16),Image.NEAREST).save('/tmp/claude-0/%s.png'%name)
+        Image.fromarray(im).resize((a.shape[1]*16,a.shape[0]*16),Image.NEAREST).save('../out/%s.png'%name)

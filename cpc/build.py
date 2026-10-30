@@ -1,7 +1,7 @@
 """Construccion de la version CPC: imagen de memoria tras la carga + parches -> ficheros y DSK."""
 import cpm, dskw, importlib, scrmap
 
-ORIG = '/home/claude/cpc/in/orig.dsk'
+ORIG = __import__('os').environ.get('ORIG_DSK', 'in/orig.dsk')   # disco ORIGINAL de CPC (no incluido)
 CB0, CB1 = 0x226, 0xA568          # CB.BIN en memoria
 AN0 = 0xBFCC                      # ANIPAN.BIN
 XB0, XB1 = 0xA568, 0xBFB8   # bloque copiado desde CED9h de ANIPAN al arrancar (original: 15EEh bytes; ampliado

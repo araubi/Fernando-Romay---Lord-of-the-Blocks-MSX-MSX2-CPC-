@@ -2,7 +2,7 @@
 S piel, C camiseta, P pantalon, M medias, Z zapatillas, B balon. '#' tinta, '.' transparente."""
 import pickle
 from collections import deque
-F=pickle.load(open('/home/claude/w/frames_final.pkl','rb'))
+F=pickle.load(open('frames_final.pkl','rb'))
 HEADS={0x0A,0x0B,0x16,0x17,0x22,0x23,0x2E,0x2F}
 JUMP=set(range(0x30,0x3E))
 def comps(rows):

@@ -7,7 +7,7 @@
 import numpy as np, pickle
 from PIL import Image
 
-UP = '/root/.claude/uploads/4bde1580-c873-5012-b5b7-94b5463a9c6b/'
+UP = '../art/'
 MOCK = UP + '1af7c9b5-image.png'
 
 # ---- paleta (indice: (R,G,B) 0-7) ----
@@ -141,7 +141,7 @@ def player_image(P, D, ch, i):
 
 def all_pieces(P):
     """-> dict clave -> imagen (indices; 0 = transparente). clave: ('itu'|'romay', i) o ('*', i)"""
-    D = pickle.load(open('/home/claude/w/msx2_classes.pkl', 'rb'))
+    D = pickle.load(open('msx2_classes.pkl', 'rb'))
     M = mock()
     out = {}
     for ch in ('itu', 'romay'):
@@ -253,7 +253,7 @@ def cheer_images(f3, bits_bg, bg):
 # marcador precalculado (estado del MSX1 al empezar el partido): imagen G4 de las filas 15-23 y
 # sumas de control por celda (mismo calculo que RDCELL)
 def sb_prerender():
-    pat, col = pickle.load(open('/home/claude/w/s5_sbstate.pkl', 'rb'))
+    pat, col = pickle.load(open('s5_sbstate.pkl', 'rb'))
     lut = g2lut()
     img = np.zeros((72, 256), np.uint8); ck = bytearray(288)
     for r in range(9):

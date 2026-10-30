@@ -10,7 +10,7 @@ TOP, BOT = 17, 62             # filas de parquet (cancha de 64 filas: lineas de 
 
 
 def _mask():
-    im = np.array(Image.open('/home/claude/w/la84_logo.png').convert('RGB')).astype(int)
+    im = np.array(Image.open('la84_logo.png').convert('RGB')).astype(int)
     return im[:, :, 2] - im[:, :, 1] > 60
 
 

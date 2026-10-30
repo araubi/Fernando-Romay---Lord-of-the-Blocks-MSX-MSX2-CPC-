@@ -6,8 +6,8 @@ from p_heads import pack, entry
 IDX = list(range(0x30, 0x3E))
 SHIFT = {0x33: 4, 0x34: 4}
 def build_frames(cpc_mem):
-    Mo = frames.msx_frames(open('/home/claude/cpc/msx_ram.bin', 'rb').read(), n=75)
-    Mf = frames.msx_frames(open('/home/claude/cpc/msxfin_ram.bin', 'rb').read(), n=75)
+    Mo = frames.msx_frames(open('msx_ram.bin', 'rb').read(), n=75)
+    Mf = frames.msx_frames(open('msxfin_ram.bin', 'rb').read(), n=75)
     C = frames.cpc_frames(cpc_mem, n=75)
     out = {}
     for i in IDX:

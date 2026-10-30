@@ -11,7 +11,7 @@ def snap(cpu):
         if d: m.keys[row]&=~(1<<bit)
         else: m.keys[row]|=1<<bit
     if f in shots:
-        cpcemu.render(m,m.galog).save('/tmp/claude-0/cpc_%d.png'%f); print('shot',f,'PC %04X'%cpu.PC, m.crtc[:14], m.ink, m.mode,flush=True)
+        cpcemu.render(m,m.galog).save('../out/cpc_%d.png'%f); print('shot',f,'PC %04X'%cpu.PC, m.crtc[:14], m.ink, m.mode,flush=True)
 c.snap=snap
 t=time.time()
 while c.frames<=max(shots): c.step()

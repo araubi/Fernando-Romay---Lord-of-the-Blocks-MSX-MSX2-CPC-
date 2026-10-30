@@ -3,7 +3,7 @@ todas las cabezas en una ventana de 16 px que empieza en x=4 de la pieza de 24 p
 las desplaza siempre +2 unidades (4 px). Asi se pueden intercambiar entre jugadores."""
 import frames
 HEADS = [0x0A, 0x0B, 0x16, 0x17, 0x22, 0x23, 0x2E, 0x2F]
-MSXF = '/home/claude/cpc/msxfin_ram.bin'
+MSXF = 'msxfin_ram.bin'
 COL = {'.': 0, '#': 1, 'o': 3}
 def pack(rows):
     out = bytearray()

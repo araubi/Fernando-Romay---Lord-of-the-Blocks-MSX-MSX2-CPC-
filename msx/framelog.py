@@ -23,7 +23,7 @@ def framelog(cas, frames=3000, seed=3):
     while c.frames<frames: c.step()
     return log
 if __name__=='__main__':
-    out=open('/mnt/user-data/outputs/Fernando_Martin_Basket_Master_NIDAMIC.cas','rb').read()
+    out=open('../releases/Fernando_Romay_Lord_of_the_Blocks_MSX1.cas','rb').read()
     log=framelog(out)
     by=collections.defaultdict(set)
     for (a,side,ret),n in log.items(): by[a].add((side,ret))

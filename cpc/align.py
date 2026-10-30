@@ -10,10 +10,10 @@ def seqs(mem, code, K=6):
             t, l = code[b]; win.append(norm(t)); b += l
         if len(win) == K: S[a] = tuple(win)
     return S
-cm, cc = pickle.load(open('/tmp/claude-0/cpc_game1.pkl', 'rb'))
-cmem = bytearray(cm.ram); ccov = pickle.load(open('/tmp/claude-0/cov1.pkl', 'rb'))
+cm, cc = pickle.load(open('../out/cpc_game1.pkl', 'rb'))
+cmem = bytearray(cm.ram); ccov = pickle.load(open('../out/cov1.pkl', 'rb'))
 ccode, _ = disall.trace(cmem, [p for p in ccov if 0x100 <= p < 0xC000])
-mmem = bytearray(open('/tmp/claude-0/msx_ram.bin', 'rb').read()); mcov = pickle.load(open('/tmp/claude-0/msx_cov.pkl', 'rb'))
+mmem = bytearray(open('../out/msx_ram.bin', 'rb').read()); mcov = pickle.load(open('../out/msx_cov.pkl', 'rb'))
 mcode, _ = disall.trace(mmem, [p for p in mcov if 0x8000 <= p < 0xF380], 0x8000, 0xF380)
 K = 6
 CS = seqs(cmem, ccode, K); MS = seqs(mmem, mcode, K)
@@ -35,7 +35,7 @@ while changed:
             if na in ccode and nb in mcode and na not in mp and norm(ccode[na][0]) == norm(mcode[nb][0]):
                 mp[na] = nb; changed = True
 print('cpc code', len(ccode), 'msx code', len(mcode), 'mapped', len(mp))
-pickle.dump((mp, ccode, mcode), open('/tmp/claude-0/align.pkl', 'wb'))
+pickle.dump((mp, ccode, mcode), open('../out/align.pkl', 'wb'))
 # segmentos contiguos
 segs = []; prev = None
 for a in sorted(mp):

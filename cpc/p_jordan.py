@@ -6,7 +6,7 @@
   punteria: distancia como Itu y error x0,9 x0,9."""
 import pickle
 from p_heads import pack
-HEADS = pickle.load(open('/home/claude/cpc/jordan_heads.pkl', 'rb'))
+HEADS = pickle.load(open('jordan_heads.pkl', 'rb'))
 COL = {'#': 1, 's': 1, 'w': 2, '.': 0, 'r': 1, 'k': 1}
 # cabezas de Jordan con la silueta de las de Itu (asi encajan con el cuerpo); piel oscura y
 # detalles en blanco (ojos y boca) para que se vea hacia donde mira

@@ -1,6 +1,6 @@
 from PIL import Image
 import numpy as np
-P='/root/.claude/uploads/4bde1580-c873-5012-b5b7-94b5463a9c6b/'
+P='../art/'
 def msxgrid(f, sx=584/128, sy=4.0):
     L=np.asarray(Image.open(P+f).convert('L')).astype(float)
     best=None

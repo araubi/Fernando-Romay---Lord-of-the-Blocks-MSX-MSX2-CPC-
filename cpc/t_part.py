@@ -16,7 +16,7 @@ def chk(cpu):
         if r[a:a+64]!=r[0xA568+64*row:0xA568+64*row+64]: bad+=1
     stats['ok' if bad==0 else 'bad']+=1
     stats['n'].append((r[0x7390]-0x54)//4)
-    if bad and stats['bad']<4: print('frame',cpu.frames,'bad rows',bad, flush=True); s.img().save('/tmp/claude-0/pbad_%d.png'%stats['bad'])
+    if bad and stats['bad']<4: print('frame',cpu.frames,'bad rows',bad, flush=True); s.img().save('../out/pbad_%d.png'%stats['bad'])
     return False
 c.hooks[0x02D9]=chk
 bgerr=[0]
@@ -27,4 +27,4 @@ c.hooks[0x02A6]=chk2
 s.run(N)
 import collections
 print({k:v for k,v in stats.items() if k!='n'}, 'FULLF', r[0x7394], 'bgerr', bgerr[0], 'entries', collections.Counter(stats['n']).most_common(8), 'PC', hex(c.PC))
-s.img().save('/tmp/claude-0/pend.png')
+s.img().save('../out/pend.png')

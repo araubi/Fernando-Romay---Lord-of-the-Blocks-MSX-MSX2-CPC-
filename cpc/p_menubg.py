@@ -14,7 +14,7 @@ import numpy as np, lz, scrmap
 ROWS = 96
 
 def graphic():
-    mc = np.load('/home/claude/cpc/menu_msx1.npy')     # 192x256: 0 negro, 1 cian, 2 azul, 3 blanco, 4 rojo
+    mc = np.load('menu_msx1.npy')     # 192x256: 0 negro, 1 cian, 2 azul, 3 blanco, 4 rojo
     pen = np.array([1, 0, 2, 2, 3], np.uint8)[mc]
     out = bytearray()
     for y in range(ROWS):

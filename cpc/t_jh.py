@@ -15,4 +15,4 @@ for t in range(60):
 for p in range(3):
     W=Image.new('RGB',(560*2,90*2*5))
     for i,c in enumerate(crops[p*10:p*10+10]): W.paste(c.resize((1120,180),Image.NEAREST) if False else c,((i%2)*560,(i//2)*90))
-    W=W.crop((0,0,1120,450)).resize((2240,900),Image.NEAREST); W.save('/tmp/claude-0/jh_%d.png'%p)
+    W=W.crop((0,0,1120,450)).resize((2240,900),Image.NEAREST); W.save('../out/jh_%d.png'%p)

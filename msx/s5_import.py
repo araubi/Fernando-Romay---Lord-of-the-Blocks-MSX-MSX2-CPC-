@@ -33,7 +33,7 @@ def sample(im, x, y, w, h, transp=False, pal=None):
             out[j, i] = max(cnt, key=cnt.get)
     return out
 
-U = '/root/.claude/uploads/4bde1580-c873-5012-b5b7-94b5463a9c6b/'
+U = '../art/'
 FILES = {'jordan': 'a3f99c49-image.png', 'publico': 'd8d8b495-image.png', 'canastas': 'd119befc-image.png',
          'presentacion': 'd2d8dbb6-image.png', 'cancha': 'fef1eda4-image.png', 'marcador': '43494d43-image.png'}
 M, T = SH.MARGIN, SH.TITLE_H

@@ -2,7 +2,7 @@
 import pickle, numpy as np
 from scipy import ndimage
 def court_rows():
-    c = pickle.load(open('/home/claude/cpc/cancha_msx2.pkl', 'rb'))[16:64]   # filas 56-103 del fondo CPC
+    c = pickle.load(open('cancha_msx2.pkl', 'rb'))[16:64]   # filas 56-103 del fondo CPC
     outside = np.zeros(c.shape, bool)
     H = c.shape[0]
     L = []; R = []

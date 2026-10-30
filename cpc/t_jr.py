@@ -17,4 +17,4 @@ for t in range(600):
 W=Image.new('RGB',(480*3,210*2),(60,60,60))
 for j,d in enumerate('RL'):
     for i,c in enumerate(got[d]): W.paste(c,(i*480,j*210))
-W.save('/tmp/claude-0/jrun.png'); print({k:len(v) for k,v in got.items()})
+W.save('../out/jrun.png'); print({k:len(v) for k,v in got.items()})

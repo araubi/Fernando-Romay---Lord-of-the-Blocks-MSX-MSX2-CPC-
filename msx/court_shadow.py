@@ -32,7 +32,7 @@ if __name__=='__main__':
         ims.append(Image.fromarray(((~b)*255).astype('uint8')).crop((60,56,200,112)).resize((140*4,56*4),Image.NEAREST))
     sheet=Image.new('L',(140*4*2+10,56*4*2+10),128)
     for i,im in enumerate(ims): sheet.paste(im,((i%2)*(140*4+10),(i//2)*(56*4+10)))
-    sheet.save('/tmp/claude-0/sh.png')
+    sheet.save('../out/sh.png')
 def shadow2(bits, dx=12):
     a=shadow(bits,'outline',dx); s=shadow(bits,'sparse',dx); return a|s
 def apply(F1,F2,F3):

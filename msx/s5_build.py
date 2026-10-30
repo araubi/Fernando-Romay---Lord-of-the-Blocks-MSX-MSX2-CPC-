@@ -276,7 +276,7 @@ def build(ref_cas):
 
 if __name__ == '__main__':
     import sys
-    ref = open('/mnt/user-data/outputs/Fernando_Martin_Basket_Master_NIDAMIC.cas', 'rb').read()
+    ref = open('../releases/Fernando_Romay_Lord_of_the_Blocks_MSX1.cas', 'rb').read()
     rom, L, img, bg, vram = build(ref)
     open(sys.argv[1] if len(sys.argv) > 1 else 's5.rom', 'wb').write(rom)
     open('s5.cas', 'wb').write(img)

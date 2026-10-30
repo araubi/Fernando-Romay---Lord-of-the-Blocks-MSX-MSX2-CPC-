@@ -100,7 +100,7 @@ def build(bits):
 
 if __name__ == '__main__':
     from PIL import Image
-    v, r, reg, pal = pickle.load(open('/tmp/claude-0/st600.pkl', 'rb'))
+    v, r, reg, pal = pickle.load(open('../out/st600.pkl', 'rb'))
     b = np.unpackbits(np.frombuffer(r[0xB498:0xB498 + 0xE00], np.uint8)).reshape(112, 256).astype(bool)
     T, full, col, err = build(b)
     print('pixeles con color perdido:', err)
@@ -108,7 +108,7 @@ if __name__ == '__main__':
     for k, (rr, g, bb) in PAL.items(): P[k] = (rr * 255 // 7, g * 255 // 7, bb * 255 // 7)
     tgt = np.array([P[i] for i in T.flat], np.uint8).reshape(T.shape + (3,))
     g3 = render(full[Y0:], col, P)
-    Image.fromarray(np.vstack([tgt, g3])).resize((1024, 448), Image.NEAREST).save('/tmp/claude-0/court2.png')
+    Image.fromarray(np.vstack([tgt, g3])).resize((1024, 448), Image.NEAREST).save('../out/court2.png')
 
 
 # ---------------------------------------------------------------------------------------------
@@ -259,7 +259,7 @@ UCOL = {(0, 0, 0): BLACK, (255, 218, 145): PARQ, (109, 218, 182): TEAL, (255, 25
         (72, 218, 255): 7, (255, 36, 36): 2, (36, 72, 218): 6}
 def user_indices():
     from PIL import Image
-    u = np.asarray(Image.open('/home/claude/w/court_user_v3.png').convert('RGB')).astype(int)
+    u = np.asarray(Image.open('court_user_v3.png').convert('RGB')).astype(int)
     keys = list(UCOL); arr = np.array(keys)
     d = ((u[:, :, None, :] - arr[None, None]) ** 2).sum(3)
     return np.array([UCOL[k] for k in keys], np.uint8)[d.argmin(2)]
@@ -269,8 +269,8 @@ def top_colours(bits):
     juego); color de tinta = el que el usuario puso en los pixeles a 1, fondo = el de los pixeles a 0"""
     from collections import Counter
     U = user_indices()
-    v, r, reg, pal = pickle.load(open('/home/claude/w/court_ref540.pkl', 'rb'))
-    mask = pickle.load(open('/home/claude/w/court_pmask.pkl', 'rb'))
+    v, r, reg, pal = pickle.load(open('court_ref540.pkl', 'rb'))
+    mask = pickle.load(open('court_pmask.pkl', 'rb'))
     col = np.zeros((56, 32), np.uint8)
     for y in range(8, 64):
         for cx in range(32):
@@ -292,7 +292,7 @@ def top_colours(bits):
 
 def build3(bits):
     U = user_indices()
-    mask = pickle.load(open('/home/claude/w/court_pmask.pkl', 'rb'))
+    mask = pickle.load(open('court_pmask.pkl', 'rb'))
     T_old = classify(bits)
     T = np.where(mask[64:120], T_old, U[64:120]).astype(np.uint8)
     nb, col, err = to_g3(T)

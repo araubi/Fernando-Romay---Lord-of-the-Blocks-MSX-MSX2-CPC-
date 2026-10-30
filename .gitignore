@@ -1,0 +1,10 @@
+# ficheros del juego original: no se publican (cada uno pone los suyos)
+original/
+cpc/in/
+# generados a partir del original
+cpc/msx_ram.bin
+cpc/msxfin_ram.bin
+msx/state460.pkl
+# salidas de las builds y de las pruebas
+out/
+__pycache__/

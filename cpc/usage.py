@@ -2,7 +2,7 @@ import sys, pickle, random, numpy as np, time
 from sess import Sess, KEY
 import cpcemu
 seed=int(sys.argv[1]); N=int(sys.argv[2]); mode=sys.argv[3]
-s=Sess.load('/tmp/claude-0/cpc_menu.pkl')
+s=Sess.load('../out/cpc_menu.pkl')
 R=np.zeros(65536,np.uint8); W=np.zeros(65536,np.uint8); X=np.zeros(65536,np.uint8)
 m=s.m; c=s.c
 ram=m.ram
@@ -20,6 +20,6 @@ end=c.frames+N
 while c.frames<end:
     X[c.PC]=1; c.step()
     if c.frames%5000==0 and c.frames!=getattr(s,'_lf',0):
-        s._lf=c.frames; s.shot('/tmp/claude-0/us_%s_%d.png'%(mode,c.frames)); print(c.frames,time.time()-t,flush=True)
-pickle.dump((R,W,X),open('/tmp/claude-0/usage_%s_%d.pkl'%(mode,seed),'wb'))
-s.save('/tmp/claude-0/cpc_end_%s.pkl'%mode)
+        s._lf=c.frames; s.shot('../out/us_%s_%d.png'%(mode,c.frames)); print(c.frames,time.time()-t,flush=True)
+pickle.dump((R,W,X),open('../out/usage_%s_%d.pkl'%(mode,seed),'wb'))
+s.save('../out/cpc_end_%s.pkl'%mode)

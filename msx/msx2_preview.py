@@ -40,4 +40,4 @@ if __name__=='__main__':
     r=preview('fin2.cas',sc,shots)
     S=Image.new('RGB',(512*3,256*2+8),(30,30,30))
     for k,f in enumerate(shots): S.paste(r[f].crop((0,8,256,136)).resize((512,256),Image.NEAREST),((k%3)*512,(k//3)*(256+8)))
-    S.save('/mnt/user-data/outputs/MSX2_vista_previa.png')
+    S.save('../out/MSX2_vista_previa.png')

@@ -36,5 +36,5 @@ def sheet(ims, cols=6, scale=1):
 if __name__ == '__main__':
     rom = open(sys.argv[1], 'rb').read(); N = int(sys.argv[2])
     m, c, ims = run(rom, N, every=int(sys.argv[3]) if len(sys.argv) > 3 else 200)
-    sheet(ims).save('/tmp/claude-0/s5sheet.png')
+    sheet(ims).save('../out/s5sheet.png')
     print('PC %04X frames %d' % (c.PC, c.frames))

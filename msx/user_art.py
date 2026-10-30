@@ -1,6 +1,6 @@
 """Graficos retocados por el usuario (plantillas importadas con s5_import)."""
 import os, pickle
-PATH = '/home/claude/w/user_v1.pkl'
+PATH = 'user_v1.pkl'
 D = pickle.load(open(PATH, 'rb')) if os.path.exists(PATH) else None
 
 def bg(bg):

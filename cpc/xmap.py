@@ -1,5 +1,5 @@
 import pickle, bisect
-m2c, c2m, mp = pickle.load(open('/tmp/claude-0/maps.pkl', 'rb'))
+m2c, c2m, mp = pickle.load(open('../out/maps.pkl', 'rb'))
 inv = {v: k for k, v in mp.items()}
 ms = sorted(inv)
 def m2cpc(a, verbose=False):

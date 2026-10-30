@@ -9,5 +9,5 @@ for k,i in enumerate(sorted(F)):
     for y,l in enumerate(rows):
         for x,ch in enumerate(l):
             d.rectangle([X+x*S,Y+14+y*S,X+x*S+S-1,Y+14+y*S+S-1],fill=CL[ch])
-sheet.crop((0,0,W*12,(40*S+20)*3)).resize((1600,673)).save('/tmp/claude-0/cl1.png')
-sheet.crop((0,(40*S+20)*3,W*12,(40*S+20)*6)).resize((1600,673)).save('/tmp/claude-0/cl2.png')
+sheet.crop((0,0,W*12,(40*S+20)*3)).resize((1600,673)).save('../out/cl1.png')
+sheet.crop((0,(40*S+20)*3,W*12,(40*S+20)*6)).resize((1600,673)).save('../out/cl2.png')

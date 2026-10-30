@@ -20,6 +20,6 @@ while s.c.frames<end:
         for k in range(4):
             e2=s.c.frames+15
             while s.c.frames<e2: s.c.step()
-            s.img().save('/tmp/claude-0/zoom_%s_%d_%d.png'%(mode,n,k))
+            s.img().save('../out/zoom_%s_%d_%d.png'%(mode,n,k))
         if len(zs)>=2: break
 print('zooms',z)

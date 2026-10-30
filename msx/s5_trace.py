@@ -40,5 +40,5 @@ if __name__ == '__main__':
     agg, ims, m, c = trace(img, N, shots=tuple(range(500, N, 500)))
     for (pc, reg), (n, f0, f1, a0, a1) in sorted(agg.items()):
         print('%04X %-6s n=%-7d f%5d-%5d  %04X-%04X' % (pc, reg, n, f0, f1, a0, a1))
-    for f, im in ims.items(): im.save('/tmp/claude-0/s5t_%d.png' % f)
-    pickle.dump(dict(agg), open('/tmp/claude-0/s5trace.pkl', 'wb'))
+    for f, im in ims.items(): im.save('../out/s5t_%d.png' % f)
+    pickle.dump(dict(agg), open('../out/s5trace.pkl', 'wb'))

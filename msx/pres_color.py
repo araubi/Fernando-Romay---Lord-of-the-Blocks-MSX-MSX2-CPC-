@@ -11,7 +11,7 @@ HANDS = (0xCC0A, 0xCC54, 0xCC9E)
 BALL = 9          # rojo del balon -> naranja
 
 def load():
-    return pickle.load(open('/home/claude/w/pres_cap.pkl', 'rb'))
+    return pickle.load(open('pres_cap.pkl', 'rb'))
 
 def composite(d, keys=(0xC39A, 0xC5E0, 0xCBC0)):
     st = d['static'].copy()
@@ -67,12 +67,12 @@ if __name__ == '__main__':
     from PIL import Image
     pic, frames = build()
     rgb = np.array([SA.rgb8(SA.PAL[i]) for i in range(16)], np.uint8)
-    Image.fromarray(rgb[pic]).resize((768, 576), Image.NEAREST).save('/tmp/claude-0/prescol.png')
+    Image.fromarray(rgb[pic]).resize((768, 576), Image.NEAREST).save('../out/prescol.png')
     ks = sorted(frames, key=lambda k: (frames[k][0], k))
     S = Image.new('RGB', (sum(frames[k][3] * 8 * 3 + 6 for k in ks), 56 * 3), (60, 60, 60)); x = 0
     for k in ks:
         a = frames[k][4]; S.paste(Image.fromarray(rgb[a]).resize((a.shape[1] * 3, a.shape[0] * 3), Image.NEAREST), (x, 0)); x += a.shape[1] * 3 + 6
-    S.save('/tmp/claude-0/prescolf.png')
+    S.save('../out/prescolf.png')
 
 # ---------------------------------------------------------------------------------------------
 HEADS = [0xC5E0, 0xC6C2, 0xC7A4, 0xC886, 0xC968, 0xCA4A, 0xCB2C, 0xCC0E]

@@ -26,7 +26,7 @@ def chk(cpu):
         if r[a:a+64]!=r[0xA568+64*row:0xA568+64*row+64]: bad+=1
     st['ok' if bad==0 else 'bad']+=1
     if r[0x7394]: st['full']+=1
-    if bad and st['bad']<3: s.img().save('/tmp/claude-0/pb_%s_%d.png'%(tag,st['bad'])); print('bad',cpu.frames,bad,flush=True)
+    if bad and st['bad']<3: s.img().save('../out/pb_%s_%d.png'%(tag,st['bad'])); print('bad',cpu.frames,bad,flush=True)
     return False
 c.hooks[0x02D9]=chk
 BGTAB=im.bgtab
@@ -42,5 +42,5 @@ while c.frames<end:
     c.step()
     if c.PC<0x100 or not scrmap.code_ok(c.PC): badpc[0]+=1
     if c.frames%3000==0 and c.frames!=last:
-        last=c.frames; s.shot('/tmp/claude-0/p2_%s_%d.png'%(tag,c.frames))
+        last=c.frames; s.shot('../out/p2_%s_%d.png'%(tag,c.frames))
 print(tag, dict(st), 'badpc', badpc[0], flush=True)

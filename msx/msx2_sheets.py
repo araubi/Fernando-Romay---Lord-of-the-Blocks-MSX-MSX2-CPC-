@@ -28,6 +28,6 @@ def sheet(name, frames, M, fn, S=5, per=12):
         d.text((lx+36,ly+16),'RGB MSX2 %d,%d,%d'%PAL2[idx],fill=(180,180,180)); lx+=210
     im.save(fn); return lay
 L={}
-L['iturriaga']=sheet('ITURRIAGA',ITU_FR,ITU,'/mnt/user-data/outputs/MSX2_sprites_ITURRIAGA.png')
-L['romay']=sheet('ROMAY',ROM_FR,ROM,'/mnt/user-data/outputs/MSX2_sprites_ROMAY.png')
-json.dump(L,open('/home/claude/w/msx2_sheet_layout.json','w'))
+L['iturriaga']=sheet('ITURRIAGA',ITU_FR,ITU,'../out/MSX2_sprites_ITURRIAGA.png')
+L['romay']=sheet('ROMAY',ROM_FR,ROM,'../out/MSX2_sprites_ROMAY.png')
+json.dump(L,open('msx2_sheet_layout.json','w'))

@@ -7,5 +7,5 @@ r=s.m.ram; r[0x110B:0x110E]=b'003'
 ev=[]
 s.c.hooks[L['STAT2']]=lambda cpu:(ev.append(cpu.frames),False)[1]
 for k in range(16):
-    s.run(150); s.shot('/tmp/claude-0/half_%02d.png'%k)
+    s.run(150); s.shot('../out/half_%02d.png'%k)
 print(ev, hex(s.c.PC))

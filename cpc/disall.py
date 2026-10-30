@@ -32,9 +32,9 @@ def listing(mem, code, refs, lo, hi):
             a = b
     return '\n'.join(out)
 if __name__ == '__main__':
-    m, c = pickle.load(open('/tmp/claude-0/cpc_game1.pkl', 'rb'))
-    cov = pickle.load(open('/tmp/claude-0/cov1.pkl', 'rb'))
+    m, c = pickle.load(open('../out/cpc_game1.pkl', 'rb'))
+    cov = pickle.load(open('../out/cov1.pkl', 'rb'))
     mem = bytearray(m.ram)
     code, refs = trace(mem, [0x226] + sorted(p for p in cov if 0x100 <= p < 0xC000))
-    open('/tmp/claude-0/cpc.lst', 'w').write(listing(mem, code, refs, 0x100, 0xC000))
+    open('../out/cpc.lst', 'w').write(listing(mem, code, refs, 0x100, 0xC000))
     print(len(code))

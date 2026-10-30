@@ -25,4 +25,4 @@ for k,(name,rows) in enumerate(items):
     for y,r in enumerate(rows):
         for x,p in enumerate(r):
             d.rectangle([ox+x*S,oy+y*S,ox+x*S+S-2,oy+y*S+S-2],fill=PAL[p])
-W.save('/mnt/user-data/outputs/CPC_Jordan_graficos.png'); print(W.size, len(items))
+W.save('../out/CPC_Jordan_graficos.png'); print(W.size, len(items))

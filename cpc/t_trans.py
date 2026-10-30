@@ -15,4 +15,4 @@ for k in range(48):
     s.run(1); shots.append(s.img())
 W=Image.new('RGB',(640*4,200*12))
 for i,c in enumerate(shots): W.paste(c,((i%4)*640,(i//4)*200))
-W.resize((1280,1200)).save('/tmp/claude-0/trans.png')
+W.resize((1280,1200)).save('../out/trans.png')

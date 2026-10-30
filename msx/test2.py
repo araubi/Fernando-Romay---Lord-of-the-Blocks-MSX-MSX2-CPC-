@@ -21,5 +21,5 @@ if __name__=='__main__':
     from PIL import Image
     S=Image.new('RGB',(256*3,192*2))
     for k,f in enumerate(shots): S.paste(res[f],((k%3)*256,(k//3)*192))
-    S.resize((256*3*2,192*4),Image.NEAREST).save('/tmp/claude-0/msx2_%s.png'%(sys.argv[2] if len(sys.argv)>2 else '1'))
+    S.resize((256*3*2,192*4),Image.NEAREST).save('../out/msx2_%s.png'%(sys.argv[2] if len(sys.argv)>2 else '1'))
     print('PC %04X'%c.PC, 'regs',[hex(x) for x in m.vdp.reg[:8]], 'D222=%02X'%m.ram[0xD222], 'ROMSLOT=%02X'%m.ram[0x8000])

@@ -13,4 +13,4 @@ print('frames',c.frames,'PC %04X'%c.PC, 'SP %04X'%c.SP)
 print(seen[:60])
 print({hex(k):v for k,v in list(pcs.items())[:20]})
 import pickle
-cpcemu.render(m).save('/tmp/claude-0/cpc0.png')
+cpcemu.render(m).save('../out/cpc0.png')

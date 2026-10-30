@@ -27,4 +27,4 @@ if __name__=='__main__':
     W=4; H=(len(shots)+W-1)//W
     sheet=Image.new('RGB',(256*W,192*H))
     for i,(f,im) in enumerate(shots): sheet.paste(im,((i%W)*256,(i//W)*192))
-    sheet.save('/tmp/claude-0/long_%s.png'%os.path.basename(cas))
+    sheet.save('../out/long_%s.png'%os.path.basename(cas))

@@ -2,7 +2,7 @@
 presentacion del CPC (negro, naranja, blanco, piel). Se rehace la pantalla comprimida de ANIPAN.BIN y
 los fotogramas animados (balon 3, cabeza 8, mano 4) del bloque que se copia a A568h."""
 import pickle, numpy as np
-SRC = pickle.load(open('/home/claude/cpc/intro_src.pkl', 'rb'))
+SRC = pickle.load(open('intro_src.pkl', 'rb'))
 CMAP = {1: 0, 9: 1, 15: 2, 2: 3, 4: 2, 7: 2}
 OX = 48            # la imagen del MSX2 (256x192) va en x=48 de los 320 px del CPC
 def to_cpc(a): return np.vectorize(lambda v: CMAP.get(int(v), 0))(a).astype(np.uint8)

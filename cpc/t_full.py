@@ -22,5 +22,5 @@ while c.frames<end:
     if ev and ev[-1] is not last:
         last=ev[-1]; print(last, flush=True); pend += [(last[0]+k, '%s_%d_%d'%(last[1],last[0],k)) for k in (150,400)]
     if pend and c.frames>=pend[0][0]:
-        _,name=pend.pop(0); s.shot('/tmp/claude-0/full_%s.png'%name)
-print('bad',bad); s.shot('/tmp/claude-0/full_end.png'); s.save('/tmp/claude-0/full_end.pkl')
+        _,name=pend.pop(0); s.shot('../out/full_%s.png'%name)
+print('bad',bad); s.shot('../out/full_end.png'); s.save('../out/full_end.pkl')

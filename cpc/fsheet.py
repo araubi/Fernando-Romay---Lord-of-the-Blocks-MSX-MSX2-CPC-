@@ -19,7 +19,7 @@ def sheet(C, M, idx, path, sc=3):
                         for b in range(sc): px[(ox+x+28)*sc+a,(oy+y)*sc+b]=MP[p]
     W.save(path)
 if __name__=='__main__':
-    m,c=pickle.load(open('/tmp/claude-0/cpc_game1.pkl','rb')); r=bytes(m.ram)
-    mx=open('/tmp/claude-0/msx_ram.bin','rb').read()
+    m,c=pickle.load(open('../out/cpc_game1.pkl','rb')); r=bytes(m.ram)
+    mx=open('../out/msx_ram.bin','rb').read()
     C=frames.cpc_frames(r,n=75); M=frames.msx_frames(mx,n=75)
-    sheet(C,M,range(0,40),'/tmp/claude-0/fs1.png'); sheet(C,M,range(40,75),'/tmp/claude-0/fs2.png')
+    sheet(C,M,range(0,40),'../out/fs1.png'); sheet(C,M,range(40,75),'../out/fs2.png')

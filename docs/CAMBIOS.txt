@@ -1,0 +1,211 @@
+FERNANDO ROMAY - LORD OF THE BLOCKS
+Resumen de cambios sobre "Fernando Martin Basket Master" (Dinamic, 1987)
+=======================================================================
+
+ARCHIVOS FINALES
+----------------
+  MSX1:  Fernando_Romay_Lord_of_the_Blocks_MSX1.rom  (64 KB, mapper ASCII16)
+         Fernando_Romay_Lord_of_the_Blocks_MSX1.cas  (cinta)
+  MSX2:  Fernando_Romay_Lord_of_the_Blocks_MSX2.rom  (256 KB, mapper ASCII16;
+         funciona tambien en MSX2+ y turbo R)
+  CPC:   Fernando_Romay_Lord_of_the_Blocks_CPC.dsk  (disco; RUN"BASKET)
+
+
+1. CAMBIOS COMUNES (MSX1 y MSX2)
+--------------------------------
+Jugadores y nombres
+  - Los dos jugadores son ITURRIAGA (izquierda) y F. ROMAY (derecha).
+    En modo 2 jugadores, el campo derecho se llama "F. ROMAY" en vez de "JUGADOR 2".
+  - Graficos retocados:
+      * Itu: barba en cabezas y saltos.
+      * Romay: mas alto, con mas pelo y nariz mas marcada.
+      * Saltos, tiros y mates repasados a mano. Los del otro lado se dibujan en espejo.
+
+Menu
+  - Titulo "Lord of the blocks" y cabecera FERNANDO / ROMAY.
+  - En "1 JUGADOR" se elige el personaje (1 - ITU / 2 - ROMAY).
+    El humano juega siempre en el campo izquierdo. Si elige a Romay, el juego intercambia
+    cabezas, saltos (en espejo), nombres y capacidades. Al volver al menu todo queda como estaba.
+
+Capacidades de cada jugador
+  - ITURRIAGA: corre mas (+10% de diseno; medido en el juego, +9%), se cansa antes (+10%)
+    y tira mejor (error del tiro x0,9).
+  - F. ROMAY: corre menos (-10% de diseno; medido, -9%), aguanta mas (se cansa un 20% mas lento)
+    y la distancia le pesa mas en el tiro (+10%).
+  - Comprobado en partidos de 1 y 2 jugadores, eligiendo a cada uno, y en las dos partes.
+
+Pista y valla
+  - Valla publicitaria: Mirinda | MSX | ASTRAN PCP.
+  - Pista con el logo de Los Angeles 84 (estrellas en movimiento y aros olimpicos):
+    debajo del circulo central, entre las dos lineas de tres y centrado en la linea central.
+
+Controles
+  - Jugador 1: cursores + ESPACIO.
+  - Jugador 2: W/S/A/D + SHIFT.
+  - Pausa: P.
+
+Fallos del original corregidos
+  - Barra de energia: a veces se perdia una fila. Las escrituras a la VRAM iban demasiado
+    seguidas para el TMS9918.
+
+
+2. VERSION MSX1
+---------------
+  - Relleno blanco de los dos jugadores con sprites por hardware (modo hibrido): ya no cogen
+    el color de la zona por la que pasan. Hay 2 sprites por linea por jugador, sin parpadeo.
+  - Volcado parcial de la pantalla, solo de lo que cambia, para que el juego no pierda velocidad.
+  - Pista nueva, adaptada de la del MSX2 con los colores del MSX1 (tinta negra sobre azul claro):
+      * Lineas y logo LA84 en negro.
+      * Zonas y circulo central con tramado.
+      * Fuera de la pista, negro liso.
+      * Lineas de fondo continuas, al estilo del MSX1 original.
+  - Repeticiones (vista ampliada x2): como en el original, sin sprites y con su color clash.
+    Durante la repeticion se desactivan los sprites y el seguimiento de siluetas, asi que no hay
+    desfases ni coste extra.
+  - Rendimiento medido frente al original (emulador, partidas automaticas):
+      * Juego normal: unos 4,2 fotogramas por ciclo, igual que el original.
+        Algo mas de variacion entre ciclos por el volcado parcial.
+      * Repeticiones: 17,8 fotogramas por imagen ampliada, frente a 17,4 del original (+2%).
+  - Karnov en la grada, en el publico normal y en el animado. Esta pasado desde el MSX2,
+    en blanco y negro como el resto del publico.
+  - Version en ROM ASCII16 de 64 KB, ademas de la cinta.
+
+
+3. VERSION MSX2 (SCREEN 5, 16 colores por pixel)
+------------------------------------------------
+Graficos
+  - Todo en color en SCREEN 5. Se usa doble bufer y los jugadores se dibujan con el VDP.
+  - Graficos repintados por el usuario: pista, publico (con Karnov en la grada), canastas y
+    redes, presentacion, marcador, menu principal y M. Jordan.
+  - Presentacion en color, con la piel de Romay. Itu y Romay en color en el menu y en el descanso.
+  - Marcador: las personales (1-5), los puntos y el tiempo usan cifras LCD de 7 segmentos.
+  - Saltos de Itu, Romay y Jordan en espejo segun el lado del campo en que juegan.
+
+NIVEL LEYENDA: M. JORDAN
+  - Cuarto nivel. Jordan es siempre el rival en 1 jugador y no se puede elegir.
+  - Equipacion de EE.UU. de Los Angeles 84 (azul marino), altura de Itu y ojos blancos.
+  - Capacidades:
+      * Tira un 10% mejor que Itu.
+      * Corre como Itu x1,1 x1,1 (medido en el juego: +32% sobre la velocidad base).
+      * Resiste un 20% mas que Romay.
+
+Compatibilidad
+  - MSX2, MSX2+ y turbo R (en turbo R arranca en modo Z80). Probado en emulador y en WebMSX.
+
+Fallos corregidos y rendimiento
+  - Barras de energia del marcador bien dibujadas.
+  - Sin linea blanca bajo la pista al empezar el partido.
+  - Sin "doble Itu" al lanzar un tiro libre pulsando disparo enseguida.
+  - Jordan ya no mira al lado contrario en las carreras.
+  - Menu y estadisticas sin perdida de interrupciones. La conversion de pantalla se hace por
+    trozos y las copias las hace el VDP.
+  - Estadisticas y descanso algo mas agiles (texto un 30% mas rapido).
+    Sigue habiendo una pausa breve al empezar la pantalla del descanso.
+
+
+4. VERSION AMSTRAD CPC (disco, modo 1 con 4 colores)
+---------------------------------------------------
+  Archivo: Fernando_Romay_Lord_of_the_Blocks_CPC.dsk. Se carga con RUN"BASKET.
+  Funciona en CPC 464 (con disquetera), 664 y 6128: solo usa 64 KB.
+
+  Comun con MSX
+  - Nombres ITURRIAGA / F. ROMAY. En 2 jugadores, el campo derecho se llama F. ROMAY.
+  - Menu con el fondo del MSX1 (ver mas abajo).
+  - En 1 JUGADOR se elige personaje (1 - ITURRIAGA / 2 - F. ROMAY). Si se elige a Romay se
+    intercambian cabezas, saltos/tiros/mates (en espejo), nombres y capacidades. Al volver al menu
+    todo queda como estaba.
+  - Capacidades como en MSX (velocidad, cansancio y punteria de cada uno).
+  - Controles: J1 cursores + ESPACIO (o joystick), J2 W/S/A/D + SHIFT, pausa P.
+  - Graficos de los jugadores pasados desde el MSX: barba de Itu y pelo y nariz de Romay en las
+    cabezas, y retoques de saltos, tiros y mates. Las cabezas se colocan igual que en MSX, asi se
+    pueden intercambiar entre los dos jugadores.
+  - Valla: Mirinda | AMSTRAD | ZX CALCULATOR, con el estilo de letras del CPC.
+  - Pista del MSX2 con el logo de Los Angeles 84, en los colores del CPC.
+  - Karnov ("el hombre sin cuello") en la grada, en el publico normal y en el animado.
+
+  Del MSX2
+  - Presentacion del MSX2: Romay con el balon y el logo NIDAMIC, con su animacion de cabeza,
+    balon y mano. Pasada a los 4 colores de la presentacion del CPC.
+  - Marcador con cifras LCD de 7 segmentos en puntos, personales, tiempo y posesion.
+  - NIVEL LEYENDA (cuarto nivel): en 1 jugador el rival es M. JORDAN, siempre en el campo derecho.
+    Tiene las capacidades del MSX2 y cabezas propias (con la silueta de las de Itu, ojos y boca en blanco). Con 4 colores se pinta
+    con la piel oscura y la equipacion blanca: no hay azul marino.
+    La maquina juega como en NBA.
+  - Pista color parque: durante el partido la tinta de fondo cambia a mitad de pantalla (publico y
+    valla en azul, pista en naranja, marcador en azul). Se aprovechan las interrupciones del gate
+    array. Para que el cambio caiga entre zonas, durante el partido la imagen sube 8 lineas en el
+    monitor; en el menu y las estadisticas vuelve a la posicion normal (ver pantalla de 256x192).
+    En la repeticion ampliada la pista tambien sale en naranja, tambien al entrar en ella.
+
+  Pantalla de 256x176 (sugerencias del tester)
+  - El CRTC muestra 256x176 (R1=32, R6=22) en vez de 320x200, en el mismo sitio del monitor (R2=42).
+    Todo el juego cabia ya en los 256 px centrales. La presentacion sigue en 256x192.
+  - Menu, partido, estadisticas y repeticion usan el mismo encuadre (lineas 8-183): la imagen ya no
+    sube y baja al pasar de una pantalla a otra. El cambio de colores de la pista se consigue empezando
+    la imagen una fila mas abajo en memoria (R13) en vez de mover el sincronismo vertical (R7), asi que
+    el monitor no tiene que volver a engancharse.
+  - Cada linea ocupa 64 bytes, como el bufer de dibujo. Cada bloque de 2 KB de la memoria de video deja
+    libres 640 bytes (las filas que no se ven): unos 5 KB, que se usan como memoria normal. La parte
+    que la presentacion no ocupa llega con su pantalla comprimida; el resto se guarda en el historial de
+    la repeticion (aun sin uso al arrancar) y se copia al acabar la presentacion.
+  - Rutinas adaptadas: tabla de lineas, letras, recuadros, volcado, presentacion, borrado de pantalla
+    y repeticion ampliada. La repeticion amplia 32 bytes del bufer (antes 40), centrados en cada canasta,
+    y 88 de sus filas.
+
+  Menu con el fondo del MSX1
+  - El menu lleva el fondo de la version MSX1 (con el segundo logo de Dinamic corregido): FERNANDO / ROMAY
+    con la bandera, (C)NIDAMIC 1987, "Lord of the blocks" con la estrella y la banda VERSION, sobre cian y
+    con las franjas negras de los lados. Se pasa pixel a pixel (el MSX tambien es de 256x192).
+  - Cinco colores con cuatro tintas: el rotulo usa azul y rojo, y a partir de la linea 92 esas dos tintas
+    pasan a blanco y rosa para los textos y los munecos (cambio con las interrupciones, como en la pista).
+  - El recuadro de opciones y los munecos bajan bajo el rotulo, como en el MSX. Sirve para todas las
+    pantallas del menu (eleccion de jugador, posesion, cambiar nombres).
+  - El rotulo ocupa 1,6 KB comprimido.
+
+  Pantalla del partido nueva (montaje del usuario)
+  - La pista, las canastas y los jugadores bajan 18 lineas; el publico y la valla suben 13. Entre la
+    valla y la pista hay una banda gris de dos escalones con dos banquillos de madera y, en el
+    centro, un palco VIP con el cartel DUCADOS (el palco aun esta vacio). El publico queda entero fuera de la zona
+    de juego: ni el balon ni los jugadores llegan nunca a su altura, y el publico solo se redibuja
+    con la animacion de celebracion.
+  - En la repeticion ampliada se ve la valla, la banda y la pista (el publico queda por encima).
+  - Marcador nuevo, mas bajo y compacto (panel de Romay en espejo):
+      * Energia en dos barras de 12 unidades: 24 en total, una mas que antes.
+      * Balon de posesion y personales (12345) en la fila de arriba.
+      * Nombre con letra pequena (5x7) y puntos en la de abajo. Los mensajes (CANASTA !, * FUERA *,
+        D O B L E S...) salen en el mismo sitio y caben enteros.
+      * Tiempo arriba en el centro y, debajo, el reloj de posesion.
+  - Menu POSESION antes del partido (en 1 jugador tras elegir personaje, en 2 jugadores
+    directamente): 1- 30 S (las reglas de 1984), 2- 24 S, 3- 12 S.
+  - En el menu POSESION ya no queda una raya sobre la cabeza del jugador de la derecha cuando
+    cambia la cabeza de Romay (mas alta) por la de Itu o la de Jordan.
+  - Reloj de posesion: cuenta los segundos que un jugador tiene el balon. Vuelve al valor elegido si el balon
+    cambia de dueno o queda suelto (tiro, rebote) y durante las jugadas paradas. Si llega a 0
+    sale POSESION! y saca el otro jugador (como el campo atras). En 1 jugador, con 2 segundos o
+    menos la maquina tira desde donde este.
+  - Para hacer sitio, la repeticion guarda 24 vueltas de juego en lugar de 30 (un 20% mas corta).
+  - En la banda: banquillos de madera con su sombra, un botijo (repintado por el usuario), Fernando Martin (el jugador del
+    original) sentado en el banquillo de la derecha y Alan Sugar en el palco VIP de DUCADOS.
+  - Los nombres que se escriben en CAMBIAR NOMBRES admiten como mucho 9 letras (ITURRIAGA).
+  - Memoria: los datos fijos nuevos ocupan el sitio del marcador antiguo, zonas de memoria baja que
+    solo usaba el cargador y las zonas libres de la memoria de pantalla. El fondo de la pista
+    guarda una sola vez las filas repetidas de la banda (con una tabla de filas).
+
+  Rendimiento
+  - Volcado parcial durante el partido. La imagen se sigue montando en el bufer, sin parpadeo,
+    pero en cada vuelta solo se repone el fondo y se copia a pantalla lo que cambia: los
+    rectangulos de los jugadores, el balon, las redes y el publico animado de esta vuelta y de
+    la anterior. Antes se copiaban 6,5 KB enteros dos veces por vuelta.
+    Las copias usan la misma cadena de LDI del volcado original.
+  - Si hay demasiadas piezas o la pantalla se ha montado de otra forma (inicio de periodo,
+    repeticion o fundido), esa vuelta hace la copia completa como el original.
+  - Repeticion, menu y descanso funcionan como el original.
+  - Medido en emulador: 3,6-3,8 fotogramas por vuelta del partido frente a 6,3-6,5 del original
+    (un 40% menos de tiempo por vuelta).
+
+  Limitaciones
+  - En los saltos y mates, Jordan usa los fotogramas de Romay con la piel oscura, asi que lleva
+    su pelo. No queda memoria para unos propios.
+
+
+Gracias por el proyecto. A disfrutarlo.
