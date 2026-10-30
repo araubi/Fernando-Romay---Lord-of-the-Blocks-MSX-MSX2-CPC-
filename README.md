@@ -31,8 +31,8 @@ Hace falta Python 3 con `numpy` y `Pillow`.
 2. Copia el disco original de CPC en `cpc/in/orig.dsk`, o indica su ruta con `ORIG_DSK`.
 
 ```sh
-cd msx && python3 build_msx1.py     # -> out/Fernando_Romay_Lord_of_the_Blocks_MSX1.cas y .rom
-cd cpc && python3 build_cpc.py      # -> out/Fernando_Romay_Lord_of_the_Blocks_CPC.dsk
+(cd msx && python3 build_msx1.py)   # -> out/Fernando_Romay_Lord_of_the_Blocks_MSX1.cas y .rom
+(cd cpc && python3 build_cpc.py)    # -> out/Fernando_Romay_Lord_of_the_Blocks_CPC.dsk
 ```
 
 - **MSX1 y CPC:** las builds reproducen byte a byte los ficheros de `releases/`. Los datos que se sacan del original (`msx/state460.pkl`, `cpc/msx_ram.bin` y `cpc/msxfin_ram.bin`) se generan solos la primera vez con `msx/gen_state460.py` y `cpc/gen_msx_ram.py`.
