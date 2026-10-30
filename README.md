@@ -36,15 +36,15 @@ Hace falta Python 3 con `numpy` y `Pillow`.
 ```
 
 - **MSX1 y CPC:** las builds reproducen byte a byte los ficheros de `releases/`. Los datos que se sacan del original (`msx/state460.pkl`, `cpc/msx_ram.bin` y `cpc/msxfin_ram.bin`) se generan solos la primera vez con `msx/gen_state460.py` y `cpc/gen_msx_ram.py`.
-- **MSX2:** la ROM publicada se montó en la rama `version-msx2-1.0`. Desde `msx/` en esa rama, `s5_build.build(<cinta MSX1 del hack>)` la reproduce byte a byte, aunque esas versiones antiguas usan rutas absolutas del entorno de trabajo. En la rama principal el MSX2 incorpora cambios posteriores del MSX1 (73 bytes distintos) y no está probado.
+- **MSX2:** la ROM publicada se montó en la etiqueta `msx2-1.0`. Desde `msx/` en esa etiqueta, `s5_build.build(<cinta MSX1 del hack>)` la reproduce byte a byte, aunque esas versiones antiguas usan rutas absolutas del entorno de trabajo. En la rama principal el MSX2 incorpora cambios posteriores del MSX1 (73 bytes distintos) y no está probado.
 
 ## Historial
 
 El historial de `msx/` y `cpc/` es el del trabajo real, reescrito para quitar los ficheros del juego original y las cintas y ROM intermedias.
 
-Ramas con el estado exacto de cada versión publicada:
-- `version-msx1-1.0`: MSX1 final.
-- `version-msx2-1.0`: MSX2 final.
+Etiquetas con el estado exacto de cada versión publicada:
+- `msx1-1.0`: MSX1 final.
+- `msx2-1.0`: MSX2 final.
 
 Muchos scripts de prueba (`t_*.py`, `chk.py`, etc.) son herramientas de trabajo: escriben capturas en `out/` y algunos esperan ficheros que no se publican.
 
@@ -54,3 +54,11 @@ Muchos scripts de prueba (`t_*.py`, `chk.py`, etc.) son herramientas de trabajo:
 - Hack, gráficos retocados y dirección: araubi.
 - Testers: el grupo que probó las versiones MSX y CPC.
 - Código, herramientas y documentación: desarrollados con Claude (Anthropic).
+
+## Licencia y avisos
+
+- **Código y herramientas** (`msx/`, `cpc/`): [MIT](LICENSE).
+- **Gráficos propios y documentación** (`art/`, datos gráficos de `msx/` y `cpc/`, `docs/`): [CC BY-NC-SA 4.0](LICENSE-ART).
+- **Juego original y ficheros de `releases/`:** *Fernando Martín Basket Master* es obra de Dinamic Software (1987) y sus derechos son de sus titulares. Los ficheros de `releases/` contienen el juego original modificado y no están cubiertos por ninguna de las licencias anteriores. Este hack es un homenaje sin ánimo de lucro: no se reclama ningún derecho sobre el original, y los ficheros se retirarán si los titulares lo piden.
+- **Personas reales:** los nombres e imagen de Fernando Romay, José Luis Iturriaga, Fernando Martín y Michael Jordan se usan como homenaje, sin relación ni respaldo por su parte.
+
